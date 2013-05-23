@@ -1,7 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.ebremer.webid4vivo;
 
 import java.io.IOException;
@@ -15,22 +11,12 @@ import javax.servlet.http.HttpServletResponse;
 
 /**
  *
- * @author erich
+ * @author Erich Bremer and Tammy DiPrima
  */
 @WebServlet(name = "auth", urlPatterns = {"/auth"})
 public class auth extends HttpServlet 
 {
 
-    /**
-     * Processes requests for both HTTP
-     * <code>GET</code> and
-     * <code>POST</code> methods.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException 
     {

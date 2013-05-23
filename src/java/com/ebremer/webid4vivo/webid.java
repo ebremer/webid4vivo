@@ -1,17 +1,10 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.ebremer.webid4vivo;
 
 /**
  *
- * @author erich
+ * @author Erich Bremer and Tammy DiPrima
  */
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
+
 
 import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
@@ -26,10 +19,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- *
- * @author erich
- */
 public class webid 
 {
     private X509Certificate cert = null;
