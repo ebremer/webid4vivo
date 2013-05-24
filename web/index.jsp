@@ -12,6 +12,6 @@
         <title>Welcome to webid4vivo!</title>
     </head>
     <body>
-        <h1>Welcome to webid4vivo!/h1>
+        <h1>Welcome to webid4vivo!</h1>
     </body>
 </html>
