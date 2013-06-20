@@ -11,7 +11,8 @@ import javax.servlet.http.HttpServletResponse;
 
 /**
  *
- * @author Erich Bremer and Tammy DiPrima
+ * @author Erich Bremer 
+ * @author Tammy DiPrima
  */
 @WebServlet(name = "auth", urlPatterns = {"/auth"})
 public class auth extends HttpServlet 
