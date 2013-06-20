@@ -1,8 +1,9 @@
 package com.ebremer.webid4vivo;
 
 /**
- *
- * @author Erich Bremer and Tammy DiPrima
+ * 
+ * @author Erich Bremer
+ * @author Tammy DiPrima
  */
 
 
