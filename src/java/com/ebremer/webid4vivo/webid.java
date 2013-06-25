@@ -64,17 +64,26 @@ public class webid
         }
     }
     
+    public String getSparqlQuery()
+    {
+        String sp = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ";
+        sp = sp.concat("PREFIX : <http://www.w3.org/ns/auth/cert#> ");
+        sp = sp.concat("PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> ");
+        //sp = sp.concat("ASK {?webid :key [ :modulus ?mod; :exponent ?exp; ] .}");
+        sp = sp.concat("ASK {<" + uri + "> :key [ :modulus \"" + modulus + "\"^^xsd:hexBinary; :exponent " + exponent + "; ] .}");
+        System.out.println("SPARQL : " + sp);
+        return sp;
+    }
+
+        
+
+    
     public boolean verified() 
     {
         model = ModelFactory.createDefaultModel();
         model.read(uri, "RDF/XML");
-        String sp = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>";
-        sp = sp.concat("PREFIX : <http://www.w3.org/ns/auth/cert#>");
-        sp = sp.concat("PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>");
-        //sp = sp.concat("ASK {?webid :key [ :modulus ?mod; :exponent ?exp; ] .}");
-        sp = sp.concat("ASK {<" + uri + "> :key [ :modulus \"" + modulus + "\"^^xsd:hexBinary; :exponent " + exponent + "; ] .}");
-        System.out.println("SPARQL : " + sp);
-        com.hp.hpl.jena.query.Query query = QueryFactory.create(sp);
+        
+        com.hp.hpl.jena.query.Query query = QueryFactory.create(getSparqlQuery());
         
         QueryExecution qe = QueryExecutionFactory.create(query, model);
         if (qe.execAsk()) 
