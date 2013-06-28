@@ -1,7 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.ebremer.webid4vivo;
 
 import java.io.ByteArrayInputStream;
@@ -134,19 +130,27 @@ public class ebexp extends HttpServlet {
         byte[] rb = new byte[16];
         ng.engineNextBytes(rb);
         BigInteger serial = new BigInteger(rb).abs();
+        // Set Valid Date Range for WebID Certificate.
+        // Default from current time minus one hour to deal with incorrect clocks.
+        // To date is from plus number of days valid.
         Date notBefore = new Date(System.currentTimeMillis() - (long) (60*60*1000));
         Date notAfter = new Date(notBefore.getTime() + (long) (25.9*24*60*60*1000));
+        // Build initial certificate
         X500NameBuilder nb = new X500NameBuilder();
         nb.addRDN(BCStyle.O,"WebID4VIVO");
         nb.addRDN(BCStyle.OU,"The Community Of Self Signers");
+        // The VIVO data URI needs to be fed in here
         nb.addRDN(BCStyle.UID,webid);
+        // We need to decide what will go here since this is exposed when user select WebID in browser
         nb.addRDN(BCStyle.CN,"Erich Bremer's VIVO WebID");
 	X500Name subject = nb.build();
+        // Deal with putting public key from client generated key ala keygen
         byte[] bb = Base64.decode(request.getParameter("pubkey").toString());
         NetscapeCertRequest certRequest = new NetscapeCertRequest(bb);
         PublicKey pk = certRequest.getPublicKey();
         SubjectPublicKeyInfo keyInfo = SubjectPublicKeyInfo.getInstance(pk.getEncoded());
         X509v3CertificateBuilder b = new X509v3CertificateBuilder(issuer,serial,notBefore,notAfter,subject,keyInfo);
+        // Add needed extensions.  Document why they are being added.
         b.addExtension(X509Extension.basicConstraints, true, new BasicConstraints(false));
         b.addExtension(X509Extension.keyUsage, true, new KeyUsage(KeyUsage.digitalSignature | KeyUsage.nonRepudiation | KeyUsage.keyEncipherment | KeyUsage.keyAgreement | KeyUsage.keyCertSign));
         b.addExtension(MiscObjectIdentifiers.netscapeCertType,false, new NetscapeCertType(NetscapeCertType.sslClient | NetscapeCertType.smime));
@@ -155,7 +159,7 @@ public class ebexp extends HttpServlet {
             subjectKeyIdentifier = new JcaX509ExtensionUtils().createSubjectKeyIdentifier(pk);
         } catch (NoSuchAlgorithmException ex) {
             Logger.getLogger(ebexp.class.getName()).log(Level.SEVERE, null, ex);
-        } //  subjectKeyIdentifier = new SubjectKeyIdentifierStructure(pk);
+        }
         b.addExtension(X509Extension.subjectKeyIdentifier,false,subjectKeyIdentifier);
         GeneralNames subjectAltNames = new GeneralNames(new GeneralName(GeneralName.uniformResourceIdentifier, webid));
 	b.addExtension(X509Extension.subjectAlternativeName,true, subjectAltNames);
@@ -168,6 +172,7 @@ public class ebexp extends HttpServlet {
         } catch (OperatorCreationException ex) {
             Logger.getLogger(ebexp.class.getName()).log(Level.SEVERE, null, ex);
         }
+        // Sign certificate by server
         X509CertificateHolder holder = b.build(sigGen);
         Certificate eeX509CertificateStructure = holder.toASN1Structure(); 
         CertificateFactory cf = null;
@@ -187,9 +192,8 @@ public class ebexp extends HttpServlet {
         }
         is1.close();      
         response.setContentType("application/x-x509-user-cert");
-      //  response.setContentType("application/x-pem-file");
-     //   response.setHeader("Content-Disposition", "attachment; filename=\"webid.cer\"");
         ServletOutputStream out = response.getOutputStream();
+        // Send WebID certificate to client
         try {
             StringWriter sw = new StringWriter();
             PEMWriter pemWriter = new PEMWriter(sw);
