@@ -1,5 +1,8 @@
 package com.ebremer.webid4vivo;
 
+import com.hp.hpl.jena.query.QueryExecution;
+import com.hp.hpl.jena.query.QueryExecutionFactory;
+import com.hp.hpl.jena.query.QueryFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -74,7 +77,7 @@ public class ebexp extends HttpServlet {
             throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
         PrintWriter out = response.getWriter();
-        System.out.println("process...");
+        
         try {
             out.println("<!DOCTYPE html>");
             out.println("<html>");
@@ -82,11 +85,20 @@ public class ebexp extends HttpServlet {
             out.println("<title>Generate your WEBID!</title>");            
             out.println("</head>");
             out.println("<body>");
-            out.println("<h1>Generate your WebID! 6</h1>");
+            out.println("<h2>Generate your WebID!</h2>");
             out.println("Your WebID will be your VIVO data URI...");
             out.println("<form method=\"post\">");
             out.println("<keygen id=\"pubkey\" name=\"pubkey\" challenge=\"randomchars\" keytype=\"rsa\" hidden>");
-            out.println("<input type=\"submit\" name=\"createcert\" value=\"Generate\">");
+
+            out.println("<table>");
+            out.println("<tr><td>First Name</td><td><input type=\"text\" name=\"last\" maxlength=\"25\"></td></tr>");
+            out.println("<tr><td>Last Name</td><td><input type=\"text\" name=\"first\" maxlength=\"25\"></td></tr>");
+            out.println("<tr><td>WebID (User Must Be Logged In! And field will be display only.)</td><td><input type=\"text\" name=\"webid\" maxlength=\"100\"></td></tr>");
+            out.println("<tr><td>Number Days Valid (Must Validate Number)</td><td><input type=\"text\" name=\"days\" maxlength=\"25\" value=\"365\"></td></tr>");
+            out.println("<tr><td>&nbsp;</td><td>&nbsp;</td></tr>");
+            out.println("<tr><td colspan=\"2\" align=\"center\"><input type=\"submit\" name=\"createcert\" value=\"Generate\"></td></tr>");
+            out.println("</table>");
+
             out.println("</form>");
             out.println("</body>");
             out.println("</html>");
@@ -94,7 +106,7 @@ public class ebexp extends HttpServlet {
             out.close();
         }
     }
-
+    
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**
      * Handles the HTTP
@@ -123,33 +135,54 @@ public class ebexp extends HttpServlet {
      */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        
+        // FORM STUFF
+        String first = request.getParameter("first");
+        String last = request.getParameter("last");
+        String webid = request.getParameter("webid");
+        //String webid = "http://www.ebremer.com/foaf.rdf";
+        String sDays = request.getParameter("days"); // CONVERT TO NUMBER
+        int iDays = Integer.parseInt(sDays.trim());
+        
+        
         Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
-        String webid = "http://www.ebremer.com/foaf.rdf";
+        
         X500Name issuer = new X500Name("O=WebID4VIVO, OU=The Community of Self Signers, CN=Not a Certification Authority");
         SecureRandom ng = new SecureRandom();
         byte[] rb = new byte[16];
         ng.engineNextBytes(rb);
         BigInteger serial = new BigInteger(rb).abs();
+        
         // Set Valid Date Range for WebID Certificate.
         // Default from current time minus one hour to deal with incorrect clocks.
         // To date is from plus number of days valid.
         Date notBefore = new Date(System.currentTimeMillis() - (long) (60*60*1000));
         Date notAfter = new Date(notBefore.getTime() + (long) (25.9*24*60*60*1000));
+        
         // Build initial certificate
         X500NameBuilder nb = new X500NameBuilder();
         nb.addRDN(BCStyle.O,"WebID4VIVO");
         nb.addRDN(BCStyle.OU,"The Community Of Self Signers");
+        
         // The VIVO data URI needs to be fed in here
         nb.addRDN(BCStyle.UID,webid);
+        
         // We need to decide what will go here since this is exposed when user select WebID in browser
-        nb.addRDN(BCStyle.CN,"Erich Bremer's VIVO WebID");
+        StringBuffer sb = new StringBuffer();
+        sb.append(first.trim());
+        sb.append(" ");
+        sb.append(last.trim());
+        sb.append("'s VIVO WebID");
+        nb.addRDN(BCStyle.CN, sb.toString());
 	X500Name subject = nb.build();
+        
         // Deal with putting public key from client generated key ala keygen
         byte[] bb = Base64.decode(request.getParameter("pubkey").toString());
         NetscapeCertRequest certRequest = new NetscapeCertRequest(bb);
         PublicKey pk = certRequest.getPublicKey();
         SubjectPublicKeyInfo keyInfo = SubjectPublicKeyInfo.getInstance(pk.getEncoded());
         X509v3CertificateBuilder b = new X509v3CertificateBuilder(issuer,serial,notBefore,notAfter,subject,keyInfo);
+        
         // Add needed extensions.  Document why they are being added.
         b.addExtension(X509Extension.basicConstraints, true, new BasicConstraints(false));
         b.addExtension(X509Extension.keyUsage, true, new KeyUsage(KeyUsage.digitalSignature | KeyUsage.nonRepudiation | KeyUsage.keyEncipherment | KeyUsage.keyAgreement | KeyUsage.keyCertSign));
