@@ -21,7 +21,9 @@ import com.hp.hpl.jena.sparql.vocabulary.FOAF;
 import com.hp.hpl.jena.update.GraphStore;
 import com.hp.hpl.jena.update.GraphStoreFactory;
 import com.hp.hpl.jena.update.UpdateAction;
+import edu.cornell.mannlib.vitro.webapp.beans.UserAccount;
 import edu.cornell.mannlib.vitro.webapp.controller.VitroRequest;
+import edu.cornell.mannlib.vitro.webapp.controller.authenticate.Authenticator;
 import edu.cornell.mannlib.vitro.webapp.dao.jena.ModelContext;
 import edu.cornell.mannlib.vitro.webapp.dao.jena.OntModelSelector;
 import java.io.IOException;
@@ -70,6 +72,34 @@ public class tdexp extends HttpServlet {
         out.println("<body>");
         out.println("<h1>Servlet tdexp</h1>");
 
+        readAndWrite(request, response, out);
+        
+        //out.println(getUserAccount(request, ""));
+
+        out.println("</body>");
+        out.println("</html>");
+        out.close();
+
+    }
+    
+    /**
+     * Testing.
+     * @param request
+     * @return 
+     */
+    protected UserAccount getUserAccount(HttpServletRequest request, String somebody)
+    {
+        return Authenticator.getInstance(request).getAccountForExternalAuth(somebody);
+    }
+    
+    /**
+     * Prove that we can read from, and write to, the database.
+     * @param request
+     * @param response
+     * @param out 
+     */
+    protected void readAndWrite(HttpServletRequest request, HttpServletResponse response, PrintWriter out)
+    {
         String uri = ERICH;
         String uri1 = TAMMY;
         String name = "";
@@ -98,6 +128,35 @@ public class tdexp extends HttpServlet {
             System.out.println("b: " + b.toString());
         }
 
+        // One of these methods gotta work!
+        testInsertMethods(request, response, out);
+        
+        try {
+            // Ask again to see if a record was entered
+            // TODO: THIS RETURNS FALSE. WHY?
+            result_of_ASK = m_search(uri);
+            out.println("<p>");
+            out.println("NOW, does anybody know Erich??<br>");
+            out.println(result_of_ASK);
+            out.println("</p>");
+        } catch (Exception g) {
+            System.out.println("g: " + g.toString());
+        }        
+        
+        
+    }
+
+    /**
+     * Test methods of insertion, figure out what works.
+     * @param request
+     * @param response
+     * @param out 
+     */
+    protected void testInsertMethods(HttpServletRequest request, HttpServletResponse response, PrintWriter out)
+    {
+        String uri = ERICH;
+        String uri1 = TAMMY;
+        
         // Insert
         out.println("<p>");
         //out.println("Inserting foaf:knows triples for Erich & Tammy<br>");
@@ -136,20 +195,6 @@ public class tdexp extends HttpServlet {
         } catch (Exception f) {
             System.out.println("f: " + f.toString());
         }
-
-        try {
-            // Ask and ye shall receive
-            result_of_ASK = m_search(uri);
-            out.println("<p>");
-            out.println("NOW, does anybody know Erich??<br>");
-            out.println(result_of_ASK);
-            out.println("</p>");
-        } catch (Exception g) {
-            System.out.println("g: " + g.toString());
-        }
-        out.println("</body>");
-        out.println("</html>");
-        out.close();
 
     }
 
@@ -221,6 +266,8 @@ public class tdexp extends HttpServlet {
             Resource indRes = aboxModel.getResource(individualURI);
             //aboxModel.add(indRes, FOAF.knows, aboxModel.getResource(individualURI1));
             aboxModel.add(indRes, FOAF.name, "gamma");
+            //aboxModel.commit(); //<== java.lang.UnsupportedOperationException: this model does not support transactions
+            //System.out.println("commit failed... again."); // PROBABLY EXPLAINS WHY I NEVER SEE VIVO "COMMIT()"
             //updatePropertyDateTimeValue(indRes, MODTIME, Calendar.getInstance().getTime(),ontModel);
         } catch (Exception ex) {
             System.out.println("vivoInsert(): " + ex.toString());
