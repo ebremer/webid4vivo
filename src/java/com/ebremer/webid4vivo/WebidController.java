@@ -1,21 +1,15 @@
 package com.ebremer.webid4vivo;
 
 import com.hp.hpl.jena.ontology.OntModel;
-import com.hp.hpl.jena.query.Dataset;
 import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.Literal;
-import com.hp.hpl.jena.update.GraphStore;
-import com.hp.hpl.jena.update.GraphStoreFactory;
-import com.hp.hpl.jena.update.UpdateAction;
 import edu.cornell.mannlib.vitro.webapp.beans.UserAccount;
 import edu.cornell.mannlib.vitro.webapp.controller.authenticate.Authenticator;
-import edu.cornell.mannlib.vitro.webapp.controller.authenticate.BaseLoginServlet;
 import edu.cornell.mannlib.vedit.beans.LoginStatusBean;
-import edu.cornell.mannlib.vitro.webapp.controller.VitroRequest;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -24,17 +18,16 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import java.security.cert.X509Certificate;
+import java.util.Enumeration;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpSession;
 
 /**
  * Assuming - you've already associated your WebID with your VIVO account.
  */
-public class WebidController extends BaseLoginServlet {
-
-    private VitroRequest vreq;
-    private OntModel ontModel;
+public class WebidController extends HttpServlet {
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -50,10 +43,13 @@ public class WebidController extends BaseLoginServlet {
         switch (whichThing) {
             case 1:
                 attemptLogin(request, response);
+                break;
             case 2:
                 listWebids(request, response);
+                break;
             case 3:
                 associateExistingWebID(request, response);
+                break;
             default:
                 fail(response, "what you want");
         }
@@ -80,33 +76,42 @@ public class WebidController extends BaseLoginServlet {
         }
 
         try {
-            out.println("<!DOCTYPE html>");
-            out.println("<html>");
-            out.println("<head>");
-            out.println("<title>Add WebID (Associate WebID)</title>");
-            // WATERMARK TEXTBOX
-            out.println("<script src=\"themes/sbu/js/textbox_watermark.js\"></script>");
-            out.println("</head>");
-            out.println("<body>");
-            out.println("<h2>Add a WebID to your profile!</h2>");
 
-            // SET FOCUS
-            out.println("<form id=\"form1\" runat=\"server\" method=\"post\">");
+            StringBuffer sb = new StringBuffer();
+            sb.append("<html>");
+            sb.append("<head><title>Add WebID (Associate WebID)</title></head>");
+            sb.append("<link rel=\"stylesheet\" type=\"text/css\" href=\"themes/sbu/css/mycss.css\" />");
+            sb.append("<script language=\"javascript\" src=\"themes/sbu/js/myjs.js\"></script>");
+            sb.append("<body>");
+            sb.append("    <form id=\"form1\" method=\"post\">");
+            sb.append("    <div>");
+            sb.append("        <h3>");
+            sb.append("            Add a WebID to your profile!</h3>");
+            sb.append("    </div>");
+            sb.append("    <table>");
+            sb.append("        <tr>");
+            sb.append("            <td>");
+            sb.append("                WebID");
+            sb.append("            </td>");
+            sb.append("            <td>");
+            sb.append("            	<input type=\"text\" name=\"txtWebId\" id=\"txtWebId\" value=\"http://www.mydomain.com/foaf.rdf\" onfocus=\"Focus(this.id,'http://www.mydomain.com/foaf.rdf')\" onblur=\"Blur(this.id,'http://www.mydomain.com/foaf.rdf')\"  Width=\"200px\" CssClass=\"WaterMarkedTextBox\">");
+            sb.append("            </td>");
+            sb.append("        </tr>");
+            sb.append("        <tr>");
+            sb.append("            <td>&nbsp;");
+            sb.append("            </td>");
+            sb.append("            <td>");
+            sb.append("	            <input type=\"submit\" value=\"Submit\">");
+            sb.append("            </td>");
+            sb.append("        </tr>");
+            sb.append("    </table>");
+            sb.append("    </form>");
+            sb.append("</body>");
+            sb.append("</html>");
 
-            out.println("<table>");
-            out.println("<tr><td>WebID URI</td>");
-            out.println("<td><input type=\"text\" ID=\"txtWebID\" runat=\"server\" \n"
-                    + "		onfocus=\"Focus(this.id,'http://www.mydomain.com/foaf.rdf')\"\n"
-                    + "                    onblur=\"Blur(this.id,'http://www.mydomain.com/foaf.rdf')\" \n"
-                    + "		    Width=\"126px\" CssClass=\"WaterMarkedTextBox\"></td></tr>");
+            out.println(sb.toString());
 
-            out.println("<tr><td>&nbsp;</td><td>&nbsp;</td></tr>");
-            out.println("<tr><td colspan=\"2\" align=\"center\"><input type=\"submit\" name=\"associate\"></td></tr>");
-            out.println("</table>");
 
-            out.println("</form>");
-            out.println("</body>");
-            out.println("</html>");
         } finally {
             out.close();
         }
@@ -127,7 +132,7 @@ public class WebidController extends BaseLoginServlet {
 
         if (userAccount != null) {
 
-            HttpSession session = request.getSession();
+            HttpSession session = request.getSession(false);
             session.setAttribute("UserAccount", userAccount);
 
             logYouIn(userAccount, request);
@@ -185,7 +190,6 @@ public class WebidController extends BaseLoginServlet {
      */
     protected void listWebids(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
-        response.setContentType("text/html;charset=UTF-8");
         PrintWriter out = null;
         try {
             out = response.getWriter();
@@ -195,13 +199,24 @@ public class WebidController extends BaseLoginServlet {
             out.println("<title>Your Current Webids</title>");
             out.println("</head>");
             out.println("<body>");
-            out.println("<table border=\"0\" width=\"60%\"><tr><td><b>Webids currently associated with your profile:</b></td><td></td></tr>");
-            out.println("<tr><td><a href=\"gollum?3\">Add</a></td>");
-            out.println("<td><a href=\"ebexp\">Create</a></td></tr>");
-            out.println("<tr><td>WebID</td><td>Role</td></tr>");
+            out.println("<table border=\"0\" width=\"60%\">");
+            out.println("<tr><td><a href=\"gollum?3\" target=\"addwin\">Add</a></td>");
+            out.println("<td><a href=\"ebexp\" target=\"ebexpwin\">Create</a></td></tr>");
+            out.println("<tr><th>Webids currently associated with your profile:</th><td></td></tr>");
+            out.println("<tr><td><b>WebID</b></td><td><b>Role</b></td></tr>");
 
-            String queryString = "SELECT ?s WHERE { ?s <http://vivo.stonybrook.edu/ontology/vivo-sbu/webid> ?webid . }";
-            com.hp.hpl.jena.query.Query query = QueryFactory.create(queryString);
+            WebidHelper x = new WebidHelper();
+            StringBuffer queryString = new StringBuffer();
+            queryString.append("SELECT ?webid WHERE { ");
+            queryString.append("<");
+            queryString.append(x.getProfileUri(request));
+            queryString.append(">  ");
+            queryString.append("<http://vivo.stonybrook.edu/ontology/vivo-sbu/webid> ?webid . }");
+            System.out.println("listWebids: " + queryString);
+
+            com.hp.hpl.jena.query.Query query = QueryFactory.create(queryString.toString());
+
+            OntModel ontModel = x.getOntModel(request);
 
             QueryExecution qe = QueryExecutionFactory.create(query, ontModel);
 
@@ -216,12 +231,11 @@ public class WebidController extends BaseLoginServlet {
 
             out.println("</table></body>");
             out.println("</html>");
-        } 
-        catch(Exception ex)
-        {
-            out.println("Current WebIDs had a problem: " + ex.toString());
-        }
-        finally {
+        } catch (Exception ex) {
+            out.println("<pre>");
+            ex.printStackTrace(out);
+            out.println("</pre>");
+        } finally {
             out.close();
         }
     }
@@ -250,7 +264,6 @@ public class WebidController extends BaseLoginServlet {
         X509Certificate cert = null;
         webid wid = null;
 
-        // TODO: Actually request the certificate.
         try {
             certs = (X509Certificate[]) request.getAttribute("javax.servlet.request.X509Certificate");
         } catch (Exception ex) {
@@ -316,40 +329,10 @@ public class WebidController extends BaseLoginServlet {
      * @throws ServletException if a servlet-specific error occurs
      * @throws IOException if an I/O error occurs
      */
-    @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        this.vreq = new VitroRequest(request);
-        this.ontModel = this.vreq.getJenaOntModel();
-
         processRequest(request, response);
-    }
-
-    /**
-     * TODO: I know this isn't how you do it. Need to find out how to get
-     * profile associated with user account.
-     */
-    protected String getProfile(String email) {
-        // TODO: String email = UserAccount.getEmail();
-        String queryString = "SELECT ?s WHERE { ?s <http://vivoweb.org/ontology/core#primaryEmail> \"" + email + "\" . }";
-        com.hp.hpl.jena.query.Query query = QueryFactory.create(queryString);
-
-        String name = "";
-
-        QueryExecution qe = QueryExecutionFactory.create(query, ontModel);
-
-        ResultSet results = qe.execSelect();
-        for (; results.hasNext();) {
-            QuerySolution qsoln = results.nextSolution();
-            Literal really = qsoln.getLiteral("s");
-            name = really.getString();
-        }
-        qe.close();
-
-        System.out.println(name);
-
-        return name;
 
     }
 
@@ -362,54 +345,31 @@ public class WebidController extends BaseLoginServlet {
      * @throws ServletException if a servlet-specific error occurs
      * @throws IOException if an I/O error occurs
      */
-    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        HttpSession session = request.getSession(true);
-        //UserAccount user = (UserAccount) request.getAttribute("UserAccount");
-        //String email = user.getEmailAddress();
-        
-            VitroRequest vreq = new VitroRequest(request);
-            UserAccount userAccount = LoginStatusBean.getCurrentUser(vreq);
-            String email = userAccount.getEmailAddress();
-
-        System.out.println("Email: " + email);
-        String profileURI = getProfile(email);
-
-        String webid = request.getParameter("txtWebID");
-
+        response.setContentType("text/html;charset=UTF-8");
+        PrintWriter out = null;
         try {
-            Dataset dataset = this.vreq.getDataset();
-            GraphStore graphStore = GraphStoreFactory.create(dataset);
+            out = response.getWriter();
 
-            StringBuffer sb = new StringBuffer();
-            sb.append("INSERT DATA ");
-            sb.append("{ GRAPH <http://vitro.mannlib.cornell.edu/default/vitro-kb-2> ");
-            sb.append("{ ");
-            // TODO: Get the current user profile URI
-            String uri = profileURI;
-            sb.append(uri.trim());
-            sb.append(" ");
-            sb.append("<http://vivo.stonybrook.edu/ontology/vivo-sbu/webid>  \"");
-            sb.append(webid.trim());
-            sb.append("\"^^<http://www.w3.org/2001/XMLSchema#string> . }");
-            sb.append(". }");
+            String webid = request.getParameter("txtWebId");
+            WebidHelper x = new WebidHelper();
+            x.updateVivo(request, webid);
 
-            System.out.println(sb.toString());
-            UpdateAction.parseExecute(sb.toString(), graphStore);
-        } catch (Exception ex) {
-            System.out.println("doPost(): " + ex.toString());
+            out.println(x.getCloseAndRefresh());
+        } finally {
+            out.close();
         }
+
     }
 
     /**
-     * Returns a short description of the servlet.
      *
-     * @return a String containing servlet description
+     * @param request
+     * @return
      */
-    @Override
-    public String getServletInfo() {
-        return "Short description";
-    }// </editor-fold>
+    private Authenticator getAuthenticator(HttpServletRequest request) {
+        return Authenticator.getInstance(request);
+    }
 }

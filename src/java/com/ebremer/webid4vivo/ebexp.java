@@ -1,8 +1,6 @@
 package com.ebremer.webid4vivo;
 
-import com.hp.hpl.jena.query.QueryExecution;
-import com.hp.hpl.jena.query.QueryExecutionFactory;
-import com.hp.hpl.jena.query.QueryFactory;
+import edu.cornell.mannlib.vitro.webapp.beans.UserAccount;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -61,6 +59,7 @@ import sun.security.provider.SecureRandom;
  * @author erich
  */
 public class ebexp extends HttpServlet {
+
     static KeyPair keypair = null;
 
     /**
@@ -77,36 +76,44 @@ public class ebexp extends HttpServlet {
             throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
         PrintWriter out = response.getWriter();
-        
-        try {
-            out.println("<!DOCTYPE html>");
-            out.println("<html>");
-            out.println("<head>");
-            out.println("<title>Generate your WEBID!</title>");            
-            out.println("</head>");
-            out.println("<body>");
-            out.println("<h2>Generate your WebID!</h2>");
-            out.println("Your WebID will be your VIVO data URI...");
-            out.println("<form method=\"post\">");
-            out.println("<keygen id=\"pubkey\" name=\"pubkey\" challenge=\"randomchars\" keytype=\"rsa\" hidden>");
 
-            out.println("<table>");
-            out.println("<tr><td>First Name</td><td><input type=\"text\" name=\"last\" maxlength=\"25\"></td></tr>");
-            out.println("<tr><td>Last Name</td><td><input type=\"text\" name=\"first\" maxlength=\"25\"></td></tr>");
-            out.println("<tr><td>WebID (User Must Be Logged In! And field will be display only.)</td><td><input type=\"text\" name=\"webid\" maxlength=\"100\"></td></tr>");
-            out.println("<tr><td>Number Days Valid (Must Validate Number)</td><td><input type=\"text\" name=\"days\" maxlength=\"25\" value=\"365\"></td></tr>");
-            out.println("<tr><td>&nbsp;</td><td>&nbsp;</td></tr>");
-            out.println("<tr><td colspan=\"2\" align=\"center\"><input type=\"submit\" name=\"createcert\" value=\"Generate\"></td></tr>");
-            out.println("</table>");
+        WebidHelper x = new WebidHelper();
+        UserAccount u = x.getUserAccount(request);
+        if (u != null) {
+            try {
+                out.println("<!DOCTYPE html>");
+                out.println("<html>");
+                out.println("<head>");
+                out.println("<title>Generate your WEBID!</title>");
+                out.println("</head>");
+                out.println("<body>");
+                out.println("<h2>Generate your WebID!</h2>");
+                out.println("Your WebID will be your VIVO data URI...");
+                out.println("<form method=\"post\">");
+                out.println("<keygen id=\"pubkey\" name=\"pubkey\" challenge=\"randomchars\" keytype=\"rsa\" hidden>");
 
-            out.println("</form>");
-            out.println("</body>");
-            out.println("</html>");
-        } finally {            
-            out.close();
+                out.println("<table>");
+                out.println("<tr><td>First Name</td><td><input type=\"text\" name=\"first\" maxlength=\"100\" value=\"" + u.getFirstName() + "\" disabled></td></tr>");
+                out.println("<tr><td>Last Name</td><td><input type=\"text\" name=\"last\" maxlength=\"100\" value=\"" + u.getLastName() + "\" disabled></td></tr>");
+                out.println("<tr><td>WebID</td><td><input type=\"text\" name=\"webid\" maxlength=\"200\" value=\"" + x.getProfileUri(request) + "\" disabled></td></tr>");
+                out.println("<tr><td>Number Days Valid</td><td><input type=\"text\" name=\"days\" maxlength=\"100\" value=\"365\"></td></tr>");
+                out.println("<tr><td>&nbsp;</td><td>&nbsp;</td></tr>");
+                out.println("<tr><td colspan=\"2\" align=\"center\"><input type=\"submit\" name=\"createcert\" value=\"Generate\"></td></tr>");
+                out.println("</table>");
+
+                out.println("</form>");
+                out.println("</body>");
+                out.println("</html>");
+            } finally {
+                out.close();
+            }
+
+        } else {
+            System.out.println("Somehow, the user is null.");
         }
+
     }
-    
+
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**
      * Handles the HTTP
@@ -120,7 +127,6 @@ public class ebexp extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        System.out.println("get...");
         processRequest(request, response);
     }
 
@@ -135,8 +141,37 @@ public class ebexp extends HttpServlet {
      */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        
-        // FORM STUFF
+        processForm(request, response);
+        updateVivo(request, request.getParameter("webid"));
+        closeAndRefresh(response);
+    }
+
+    /**
+     * Close this window, and refresh parent window.
+     *
+     * @param response
+     * @throws IOException
+     */
+    private void closeAndRefresh(HttpServletResponse response) throws IOException {
+        response.setContentType("text/html;charset=UTF-8");
+        PrintWriter out = null;
+        try {
+            out = response.getWriter();
+            out.println(new WebidHelper().getCloseAndRefresh());
+        } finally {
+            out.close();
+        }
+    }
+
+    public void updateVivo(HttpServletRequest request, String webid) {
+
+        WebidHelper x = new WebidHelper();
+        x.updateVivo(request, webid);
+    }
+
+    private void processForm(HttpServletRequest request, HttpServletResponse response) throws IOException {
+
+        // Process form.
         String first = request.getParameter("first");
         String last = request.getParameter("last");
         String webid = request.getParameter("webid");
@@ -144,29 +179,34 @@ public class ebexp extends HttpServlet {
         String sDays = request.getParameter("days"); // CONVERT TO NUMBER
         int iDays = Integer.parseInt(sDays.trim());
         
-        
+        System.out.println("********** webid ************");
+        if (webid != null)
+            System.out.println(webid);
+        else
+            System.out.println("oh poop.");
+
         Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
-        
+
         X500Name issuer = new X500Name("O=WebID4VIVO, OU=The Community of Self Signers, CN=Not a Certification Authority");
         SecureRandom ng = new SecureRandom();
         byte[] rb = new byte[16];
         ng.engineNextBytes(rb);
         BigInteger serial = new BigInteger(rb).abs();
-        
+
         // Set Valid Date Range for WebID Certificate.
         // Default from current time minus one hour to deal with incorrect clocks.
         // To date is from plus number of days valid.
-        Date notBefore = new Date(System.currentTimeMillis() - (long) (60*60*1000));
-        Date notAfter = new Date(notBefore.getTime() + (long) (25.9*24*60*60*1000));
-        
+        Date notBefore = new Date(System.currentTimeMillis() - (long) (60 * 60 * 1000));
+        Date notAfter = new Date(notBefore.getTime() + (long) (25.9 * 24 * 60 * 60 * 1000));
+
         // Build initial certificate
         X500NameBuilder nb = new X500NameBuilder();
-        nb.addRDN(BCStyle.O,"WebID4VIVO");
-        nb.addRDN(BCStyle.OU,"The Community Of Self Signers");
-        
+        nb.addRDN(BCStyle.O, "WebID4VIVO");
+        nb.addRDN(BCStyle.OU, "The Community Of Self Signers");
+
         // The VIVO data URI needs to be fed in here
-        nb.addRDN(BCStyle.UID,webid);
-        
+        nb.addRDN(BCStyle.UID, webid);
+
         // We need to decide what will go here since this is exposed when user select WebID in browser
         StringBuffer sb = new StringBuffer();
         sb.append(first.trim());
@@ -174,40 +214,40 @@ public class ebexp extends HttpServlet {
         sb.append(last.trim());
         sb.append("'s VIVO WebID");
         nb.addRDN(BCStyle.CN, sb.toString());
-	X500Name subject = nb.build();
-        
+        X500Name subject = nb.build();
+
         // Deal with putting public key from client generated key ala keygen
         byte[] bb = Base64.decode(request.getParameter("pubkey").toString());
         NetscapeCertRequest certRequest = new NetscapeCertRequest(bb);
         PublicKey pk = certRequest.getPublicKey();
         SubjectPublicKeyInfo keyInfo = SubjectPublicKeyInfo.getInstance(pk.getEncoded());
-        X509v3CertificateBuilder b = new X509v3CertificateBuilder(issuer,serial,notBefore,notAfter,subject,keyInfo);
-        
+        X509v3CertificateBuilder b = new X509v3CertificateBuilder(issuer, serial, notBefore, notAfter, subject, keyInfo);
+
         // Add needed extensions.  Document why they are being added.
         b.addExtension(X509Extension.basicConstraints, true, new BasicConstraints(false));
         b.addExtension(X509Extension.keyUsage, true, new KeyUsage(KeyUsage.digitalSignature | KeyUsage.nonRepudiation | KeyUsage.keyEncipherment | KeyUsage.keyAgreement | KeyUsage.keyCertSign));
-        b.addExtension(MiscObjectIdentifiers.netscapeCertType,false, new NetscapeCertType(NetscapeCertType.sslClient | NetscapeCertType.smime));
+        b.addExtension(MiscObjectIdentifiers.netscapeCertType, false, new NetscapeCertType(NetscapeCertType.sslClient | NetscapeCertType.smime));
         SubjectKeyIdentifier subjectKeyIdentifier = null;
         try {
             subjectKeyIdentifier = new JcaX509ExtensionUtils().createSubjectKeyIdentifier(pk);
         } catch (NoSuchAlgorithmException ex) {
             Logger.getLogger(ebexp.class.getName()).log(Level.SEVERE, null, ex);
         }
-        b.addExtension(X509Extension.subjectKeyIdentifier,false,subjectKeyIdentifier);
+        b.addExtension(X509Extension.subjectKeyIdentifier, false, subjectKeyIdentifier);
         GeneralNames subjectAltNames = new GeneralNames(new GeneralName(GeneralName.uniformResourceIdentifier, webid));
-	b.addExtension(X509Extension.subjectAlternativeName,true, subjectAltNames);
+        b.addExtension(X509Extension.subjectAlternativeName, true, subjectAltNames);
         AlgorithmIdentifier sigAlgId = new DefaultSignatureAlgorithmIdentifierFinder().find("SHA1withRSA");
         AlgorithmIdentifier digAlgId = new DefaultDigestAlgorithmIdentifierFinder().find(sigAlgId);
-        AsymmetricKeyParameter foo = PrivateKeyFactory.createKey(keypair.getPrivate().getEncoded());  
+        AsymmetricKeyParameter foo = PrivateKeyFactory.createKey(keypair.getPrivate().getEncoded());
         ContentSigner sigGen = null;
-        try { 
+        try {
             sigGen = new BcRSAContentSignerBuilder(sigAlgId, digAlgId).build(foo);
         } catch (OperatorCreationException ex) {
             Logger.getLogger(ebexp.class.getName()).log(Level.SEVERE, null, ex);
         }
         // Sign certificate by server
         X509CertificateHolder holder = b.build(sigGen);
-        Certificate eeX509CertificateStructure = holder.toASN1Structure(); 
+        Certificate eeX509CertificateStructure = holder.toASN1Structure();
         CertificateFactory cf = null;
         try {
             cf = CertificateFactory.getInstance("X.509", "BC");
@@ -223,7 +263,7 @@ public class ebexp extends HttpServlet {
         } catch (CertificateException ex) {
             Logger.getLogger(ebexp.class.getName()).log(Level.SEVERE, null, ex);
         }
-        is1.close();      
+        is1.close();
         response.setContentType("application/x-x509-user-cert");
         ServletOutputStream out = response.getOutputStream();
         // Send WebID certificate to client
@@ -234,30 +274,30 @@ public class ebexp extends HttpServlet {
             pemWriter.close();
             byte[] ser = sw.toString().getBytes("UTF-8");
             out.write(ser);
-        } finally {            
+        } finally {
             out.close();
         }
     }
-    
+
     @Override
-     public void init(ServletConfig config) throws ServletException {
+    public void init(ServletConfig config) throws ServletException {
         if (keypair == null) {
-        try {
-            System.out.println("initializing webid4vivo...");
-            KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-            keyGen.initialize(2048);
-            byte[] publicKey = keyGen.genKeyPair().getPublic().getEncoded();
-            keypair = keyGen.genKeyPair();
-            StringBuffer retString = new StringBuffer();
-            for (int i = 0; i < publicKey.length; ++i) {
-                retString.append(Integer.toHexString(0x0100 + (publicKey[i] & 0x00FF)).substring(1));
+            try {
+                System.out.println("initializing webid4vivo...");
+                KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+                keyGen.initialize(2048);
+                byte[] publicKey = keyGen.genKeyPair().getPublic().getEncoded();
+                keypair = keyGen.genKeyPair();
+                StringBuffer retString = new StringBuffer();
+                for (int i = 0; i < publicKey.length; ++i) {
+                    retString.append(Integer.toHexString(0x0100 + (publicKey[i] & 0x00FF)).substring(1));
+                }
+                System.out.println(retString);
+            } catch (NoSuchAlgorithmException ex) {
+                Logger.getLogger(ebexp.class.getName()).log(Level.SEVERE, null, ex);
             }
-            System.out.println(retString);
-        } catch (NoSuchAlgorithmException ex) {
-            Logger.getLogger(ebexp.class.getName()).log(Level.SEVERE, null, ex);
         }
-        }
-     }
+    }
 
     /**
      * Returns a short description of the servlet.
