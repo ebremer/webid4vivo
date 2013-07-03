@@ -10,6 +10,8 @@ import com.hp.hpl.jena.rdf.model.Literal;
 import edu.cornell.mannlib.vitro.webapp.beans.UserAccount;
 import edu.cornell.mannlib.vitro.webapp.controller.authenticate.Authenticator;
 import edu.cornell.mannlib.vedit.beans.LoginStatusBean;
+import edu.cornell.mannlib.vitro.webapp.dao.UserAccountsDao;
+import edu.cornell.mannlib.vitro.webapp.dao.WebappDaoFactory;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -18,9 +20,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import java.security.cert.X509Certificate;
-import java.util.Enumeration;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpSession;
 
@@ -28,6 +30,10 @@ import javax.servlet.http.HttpSession;
  * Assuming - you've already associated your WebID with your VIVO account.
  */
 public class WebidController extends HttpServlet {
+
+    private static final String WHO = "who you are";
+    private static final String WHAT = "what you want";
+    private static final String CERT = "your certificate";
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -51,7 +57,7 @@ public class WebidController extends HttpServlet {
                 associateExistingWebID(request, response);
                 break;
             default:
-                fail(response, "what you want");
+                fail(response, WHAT);
         }
 
     }
@@ -59,7 +65,7 @@ public class WebidController extends HttpServlet {
     /**
      * Associate an existing WebID.
      *
-     * @param request
+     * @param requestWebids currently associated with your profile
      * @param response
      * @throws IOException
      */
@@ -78,35 +84,33 @@ public class WebidController extends HttpServlet {
         try {
 
             StringBuffer sb = new StringBuffer();
-            sb.append("<html>");
-            sb.append("<head><title>Add WebID (Associate WebID)</title></head>");
-            sb.append("<link rel=\"stylesheet\" type=\"text/css\" href=\"themes/sbu/css/mycss.css\" />");
-            sb.append("<script language=\"javascript\" src=\"themes/sbu/js/myjs.js\"></script>");
-            sb.append("<body>");
-            sb.append("    <form id=\"form1\" method=\"post\">");
-            sb.append("    <div>");
-            sb.append("        <h3>");
-            sb.append("            Add a WebID to your profile!</h3>");
-            sb.append("    </div>");
-            sb.append("    <table>");
-            sb.append("        <tr>");
-            sb.append("            <td>");
-            sb.append("                WebID");
-            sb.append("            </td>");
-            sb.append("            <td>");
-            sb.append("            	<input type=\"text\" name=\"txtWebId\" id=\"txtWebId\" value=\"http://www.mydomain.com/foaf.rdf\" onfocus=\"Focus(this.id,'http://www.mydomain.com/foaf.rdf')\" onblur=\"Blur(this.id,'http://www.mydomain.com/foaf.rdf')\"  Width=\"200px\" CssClass=\"WaterMarkedTextBox\">");
-            sb.append("            </td>");
-            sb.append("        </tr>");
-            sb.append("        <tr>");
+            sb.append("<html>\n");
+            sb.append("<head><title>Add WebID (Associate WebID)</title></head>\n");
+            sb.append("<link rel=\"stylesheet\" type=\"text/css\" href=\"themes/sbu/css/mycss.css\" />\n");
+            sb.append("<script language=\"javascript\" src=\"themes/sbu/js/myjs.js\"></script>\n");
+            sb.append("<body>\n");
+
+            sb.append("    <form id=\"form1\" method=\"post\">\n");
+            sb.append("    <div>\n");
+            sb.append("        <h3>Add a WebID to your profile!</h3>\n");
+            sb.append("    </div>\n");
+            sb.append("    <table>\n");
+            sb.append("        <tr>\n");
+            sb.append("            <td>WebID</td>\n");
+            sb.append("            <td>\n");
+            sb.append("            	<input type=\"text\" name=\"txtWebId\" id=\"txtWebId\" value=\"http://www.mydomain.com/foaf.rdf\" onfocus=\"Focus(this.id,'http://www.mydomain.com/foaf.rdf')\" onblur=\"Blur(this.id,'http://www.mydomain.com/foaf.rdf')\"  Width=\"200px\" CssClass=\"WaterMarkedTextBox\">\n");
+            sb.append("            </td>\n");
+            sb.append("        </tr>\n");
+            sb.append("        <tr>\n");
             sb.append("            <td>&nbsp;");
             sb.append("            </td>");
-            sb.append("            <td>");
-            sb.append("	            <input type=\"submit\" value=\"Submit\">");
-            sb.append("            </td>");
-            sb.append("        </tr>");
-            sb.append("    </table>");
-            sb.append("    </form>");
-            sb.append("</body>");
+            sb.append("            <td>\n");
+            sb.append("	            <input type=\"submit\" value=\"Submit\">\n");
+            sb.append("            </td>\n");
+            sb.append("        </tr>\n");
+            sb.append("    </table>\n");
+            sb.append("    </form>\n");
+            sb.append("</body>\n");
             sb.append("</html>");
 
             out.println(sb.toString());
@@ -127,18 +131,23 @@ public class WebidController extends HttpServlet {
      */
     protected void attemptLogin(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String webidAuthID = whoAreYou(request);
-
-        UserAccount userAccount = getUserAccount(request, webidAuthID);
-
-        if (userAccount != null) {
-
-            HttpSession session = request.getSession(false);
-            session.setAttribute("UserAccount", userAccount);
-
-            logYouIn(userAccount, request);
-            success(response);
+        HttpSession session = request.getSession(false);
+        
+        if (webidAuthID == null) {
+            this.fail(response, CERT);
         } else {
-            fail(response, "who you are");
+            UserAccount userAccount = getUserAccount(session, webidAuthID);
+
+            if (userAccount != null) {
+                
+                //session.setAttribute("UserAccount", userAccount);
+
+                logYouIn(userAccount, request);
+                success(response);
+            } else {
+                fail(response, WHO);
+            }
+
         }
 
     }
@@ -170,11 +179,24 @@ public class WebidController extends HttpServlet {
             out.println("<head>");
             out.println("<title>WebID Log In</title>");
             out.println("</head>");
+            out.println("<link rel=\"stylesheet\" type=\"text/css\" href=\"themes/sbu/css/mycss.css\" />");
+
             out.println("<body>");
 
-            out.println("<p>I don't know " + idk + ".</p>");
-
-            out.println("<br><a href=\"/\" target=\"newwin\">Click here to go to vivo</a><br>");
+            if (idk.equalsIgnoreCase(WHO)) {
+                out.println("<p>");
+                out.println("The WebID you selected is not associated with your profile.<br>");
+                out.println("Please <a href=\"/\">sign in</a> to your account, and then Add a WebID to your profile.");
+                out.println("</p>");
+            } else if (idk.equalsIgnoreCase(CERT)) {
+                out.println("<p>");
+                out.println("I'm expecting a certificate, but couldn't find one in your browser.<br>");
+                out.println("You can <a href=\"/\">sign in</a> to your account, and then Create a WebID to attach to your profile.");
+                out.println("</p>");
+            } else {
+                out.println("<p>I don't know " + idk + ".</p>");
+                out.println("<br><a href=\"/\">Click here to go to VIVO</a><br>");
+            }
 
             out.println("</body>");
             out.println("</html>");
@@ -198,13 +220,10 @@ public class WebidController extends HttpServlet {
             out.println("<head>");
             out.println("<title>Your Current Webids</title>");
             out.println("</head>");
+            out.println("<link rel=\"stylesheet\" type=\"text/css\" href=\"themes/sbu/css/mycss.css\" />");
             out.println("<body>");
-            out.println("<table border=\"0\" width=\"60%\">");
-            out.println("<tr><td><a href=\"gollum?3\" target=\"addwin\">Add</a></td>");
-            out.println("<td><a href=\"ebexp\" target=\"ebexpwin\">Create</a></td></tr>");
-            out.println("<tr><th>Webids currently associated with your profile:</th><td></td></tr>");
-            out.println("<tr><td><b>WebID</b></td><td><b>Role</b></td></tr>");
 
+            StringBuffer sb = new StringBuffer();
             WebidHelper x = new WebidHelper();
             StringBuffer queryString = new StringBuffer();
             queryString.append("SELECT ?webid WHERE { ");
@@ -219,17 +238,38 @@ public class WebidController extends HttpServlet {
             OntModel ontModel = x.getOntModel(request);
 
             QueryExecution qe = QueryExecutionFactory.create(query, ontModel);
+            boolean found = false;
 
             ResultSet results = qe.execSelect();
             for (; results.hasNext();) {
                 QuerySolution qsoln = results.nextSolution();
                 Literal really = qsoln.getLiteral("webid");
+                sb.append("<tr><td colspan=\"2\">" + really.getString() + "</td></tr>");
                 // TODO: ADD ROLE.
-                out.println("<tr><td>" + really.getString() + "</td><td>Self-Edit</td></tr>");
+                //out.println("<tr><td>" + really.getString() + "</td><td>Self-Edit</td></tr>");
+                found = true;
             }
             qe.close();
 
-            out.println("</table></body>");
+            if (!found) {
+                out.println("You have no WebID's associated with your profile.<br>");
+                out.println("Click <a href=\"gollum?3\" target=\"addwin\">Add</a> to associate an existing external WebID.<br>");
+                out.println("Or click <a href=\"ebexp\" target=\"ebexpwin\">Create</a> to create a new WebID.");
+            } else {
+                out.println("<table border=\"0\" width=\"60%\">");
+                out.println("<tr><td><a href=\"gollum?3\" target=\"addwin\">Add</a></td>");
+                out.println("<td><a href=\"ebexp\" target=\"ebexpwin\">Create</a></td></tr>");
+                out.println("<tr><td colspan=\"2\"><b><u>Webids currently associated with your profile:</u></b></td></tr>");
+                //out.println("<tr><td><b>WebID</b></td><td><b>Role</b></td></tr>");
+                out.println("<tr><td colspan=\"2\"><b>WebID</b></td></tr>");
+                
+                out.println(sb);
+
+                out.println("</table>");
+
+            }
+
+            out.println("</body>");
             out.println("</html>");
         } catch (Exception ex) {
             out.println("<pre>");
@@ -246,8 +286,32 @@ public class WebidController extends HttpServlet {
      * @param person
      * @return
      */
-    protected UserAccount getUserAccount(HttpServletRequest request, String webidAuthID) {
-        return Authenticator.getInstance(request).getAccountForExternalAuth(webidAuthID);
+    //protected UserAccount getUserAccount(HttpServletRequest request, String webidAuthID) {
+    //    return Authenticator.getInstance(request).getAccountForExternalAuth(webidAuthID);
+    //}
+    /**
+     * Get the current user, or null if not logged in. Override
+     * LoginStatusBean.getCurrentUser()
+     */
+    public static UserAccount getUserAccount(HttpSession session, String userEmail) {
+        if (session == null) {
+            return null;
+        }
+
+        ServletContext ctx = session.getServletContext();
+        WebappDaoFactory wadf = (WebappDaoFactory) ctx.getAttribute("webappDaoFactory");
+        if (wadf == null) {
+            System.out.println("No WebappDaoFactory");
+            return null;
+        }
+
+        UserAccountsDao userAccountsDao = wadf.getUserAccountsDao();
+        if (userAccountsDao == null) {
+            System.out.println("No UserAccountsDao");
+            return null;
+        }
+
+        return userAccountsDao.getUserAccountByEmail(userEmail);
     }
 
     /**
@@ -259,7 +323,6 @@ public class WebidController extends HttpServlet {
      */
     protected String whoAreYou(HttpServletRequest request) {
 
-        String webidAuthID = "";
         X509Certificate[] certs = null;
         X509Certificate cert = null;
         webid wid = null;
@@ -272,33 +335,25 @@ public class WebidController extends HttpServlet {
 
         if (certs == null) {
             System.out.println("No certs detected.");
+            return null;
         } else {
             cert = certs[0];
             wid = new webid(cert);
 
-            ///out.println("<p><b>WebID URI is:</b> " + wid.getURI() + "</p>");
-
             // Verify webid cert.
             if (wid.verified()) {
-                // TODO: Find user acct associated with this webid.
+                // Find user acct associated with this webid.
+                return new WebidHelper().getEmail(request, wid.getURI());
             } else {
-                //out.println("<p><b>SPARQL:</b>");
-                //out.println("<br>" + wid.getSparqlQuery());
-                //out.println("<br><font color=\"red\">QueryExecution execAsk() returned false, but I'm gonna log you in anyway (for now)System.out.println</font></p>");
+                System.out.println("QueryExecution execAsk() returned false.  Cert not verified.");
+                System.out.println(wid.getSparqlQuery());
+                return null;
+
             }
 
-            // TEMPORARY:
-            if (wid.getURI().contains("tdiprima")) {
-                webidAuthID = "tdiprima";
-            }
-
-            if (wid.getURI().contains("ebremer")) {
-                webidAuthID = "ebremer";
-            }
 
         }
-        return webidAuthID;
-
+        
     }
 
     /**

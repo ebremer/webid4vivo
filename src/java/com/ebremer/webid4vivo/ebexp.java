@@ -72,7 +72,7 @@ public class ebexp extends HttpServlet {
      * @throws ServletException if a servlet-specific error occurs
      * @throws IOException if an I/O error occurs
      */
-    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
+    protected void printForm(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
         PrintWriter out = response.getWriter();
@@ -85,6 +85,7 @@ public class ebexp extends HttpServlet {
                 out.println("<html>");
                 out.println("<head>");
                 out.println("<title>Generate your WEBID!</title>");
+                out.println("<link rel=\"stylesheet\" type=\"text/css\" href=\"themes/sbu/css/mycss.css\" />");
                 out.println("</head>");
                 out.println("<body>");
                 out.println("<h2>Generate your WebID!</h2>");
@@ -93,9 +94,9 @@ public class ebexp extends HttpServlet {
                 out.println("<keygen id=\"pubkey\" name=\"pubkey\" challenge=\"randomchars\" keytype=\"rsa\" hidden>");
 
                 out.println("<table>");
-                out.println("<tr><td>First Name</td><td><input type=\"text\" name=\"first\" maxlength=\"100\" value=\"" + u.getFirstName() + "\" disabled></td></tr>");
-                out.println("<tr><td>Last Name</td><td><input type=\"text\" name=\"last\" maxlength=\"100\" value=\"" + u.getLastName() + "\" disabled></td></tr>");
-                out.println("<tr><td>WebID</td><td><input type=\"text\" name=\"webid\" maxlength=\"200\" value=\"" + x.getProfileUri(request) + "\" disabled></td></tr>");
+                out.println("<tr><td>First Name</td><td><input type=\"text\" name=\"first\" maxlength=\"100\" value=\"" + u.getFirstName() + "\" readonly></td></tr>");
+                out.println("<tr><td>Last Name</td><td><input type=\"text\" name=\"last\" maxlength=\"100\" value=\"" + u.getLastName() + "\" readonly></td></tr>");
+                out.println("<tr><td>WebID</td><td><input type=\"text\" name=\"webid\" maxlength=\"200\" value=\"" + x.getProfileUri(request) + "\" readonly></td></tr>");
                 out.println("<tr><td>Number Days Valid</td><td><input type=\"text\" name=\"days\" maxlength=\"100\" value=\"365\"></td></tr>");
                 out.println("<tr><td>&nbsp;</td><td>&nbsp;</td></tr>");
                 out.println("<tr><td colspan=\"2\" align=\"center\"><input type=\"submit\" name=\"createcert\" value=\"Generate\"></td></tr>");
@@ -127,7 +128,7 @@ public class ebexp extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        processRequest(request, response);
+        printForm(request, response);
     }
 
     /**
@@ -163,12 +164,23 @@ public class ebexp extends HttpServlet {
         }
     }
 
+    /**
+     *
+     * @param request
+     * @param webid
+     */
     public void updateVivo(HttpServletRequest request, String webid) {
 
         WebidHelper x = new WebidHelper();
         x.updateVivo(request, webid);
     }
 
+    /**
+     *
+     * @param request
+     * @param response
+     * @throws IOException
+     */
     private void processForm(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
         // Process form.
@@ -178,12 +190,6 @@ public class ebexp extends HttpServlet {
         //String webid = "http://www.ebremer.com/foaf.rdf";
         String sDays = request.getParameter("days"); // CONVERT TO NUMBER
         int iDays = Integer.parseInt(sDays.trim());
-        
-        System.out.println("********** webid ************");
-        if (webid != null)
-            System.out.println(webid);
-        else
-            System.out.println("oh poop.");
 
         Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
 

@@ -11,6 +11,7 @@ import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.update.GraphStore;
 import com.hp.hpl.jena.update.GraphStoreFactory;
@@ -25,17 +26,18 @@ import javax.servlet.http.HttpServletRequest;
  * @author tammydiprima
  */
 public class WebidHelper {
+
     private String closeAndRefresh;
-    
-    public WebidHelper()
-    {
+
+    public WebidHelper() {
         setCloseAndRefresh();
     }
-    
+
     /**
      * Hand back THE ontology model.
+     *
      * @param request
-     * @return 
+     * @return
      */
     public OntModel getOntModel(HttpServletRequest request) {
         return new VitroRequest(request).getJenaOntModel();
@@ -43,23 +45,23 @@ public class WebidHelper {
 
     /**
      * Current user account.
+     *
      * @param request
-     * @return 
+     * @return
      */
-    public UserAccount getUserAccount(HttpServletRequest request)
-    {
+    public UserAccount getUserAccount(HttpServletRequest request) {
         VitroRequest vreq = new VitroRequest(request);
         return LoginStatusBean.getCurrentUser(vreq);
     }
-    
+
     /**
      * Update vivo with person's webid.
-     * @param request 
+     *
+     * @param request
      */
-    public void updateVivo(HttpServletRequest request, String webid)
-    {
+    public void updateVivo(HttpServletRequest request, String webid) {
         VitroRequest vreq = new VitroRequest(request);
-        
+
         UserAccount userAccount = LoginStatusBean.getCurrentUser(vreq);
         String email = userAccount.getEmailAddress();
 
@@ -86,12 +88,50 @@ public class WebidHelper {
             UpdateAction.parseExecute(sb.toString(), graphStore);
         } catch (Exception ex) {
             ex.printStackTrace();
-        }        
+        }
     }
-    
+
     /**
-     * Quick and dirty method of getting UserAccount's profile URI. TODO: Find
-     * better way.
+     * You're logging in with WebID. I need your email so I can find your
+     * UserAccount and log you in. TODO: EMAIL NEEDS TO BE MANDATORY.
+     *
+     * @param request
+     * @param webid
+     * @return
+     */
+    public String getEmail(HttpServletRequest request, String webid) {
+
+        String email = "";
+
+        // NOTE: FOR NOW WEBID IS STRING. LATER -- URI.
+        StringBuffer queryString = new StringBuffer();
+        queryString.append("SELECT ?s ?email WHERE { ");
+        queryString.append("?s <http://vivo.stonybrook.edu/ontology/vivo-sbu/webid>  \"");
+        queryString.append(webid.trim());
+        queryString.append("\"^^<http://www.w3.org/2001/XMLSchema#string>; <http://vivoweb.org/ontology/core#primaryEmail> ?email . }");
+        System.out.println("getEmail(): " + queryString);
+
+        com.hp.hpl.jena.query.Query query = QueryFactory.create(queryString.toString());
+
+        OntModel ontModel = getOntModel(request);
+        QueryExecution qe = QueryExecutionFactory.create(query, ontModel);
+
+        ResultSet results = qe.execSelect();
+        for (; results.hasNext();) {
+            QuerySolution qsoln = results.nextSolution();
+
+            Literal really = qsoln.getLiteral("email");
+            email = really.getString();            
+        }
+        qe.close();
+        System.out.println("email: " + email);
+
+        return email;
+
+    }
+
+    /**
+     * I have a User Account. Now get Profile URI, by email address.
      *
      * @param request
      * @param response
@@ -123,9 +163,7 @@ public class WebidHelper {
                 profileURI = really.getURI();
             }
             qe.close();
-        }
-        else
-        {
+        } else {
             // Shouldn't happen, but...
             System.out.println("PROFILE IS NULL");
         }
@@ -133,9 +171,9 @@ public class WebidHelper {
         return profileURI;
     }
 
-
     /**
      * Code for: Close this window, and refresh parent window.
+     *
      * @return the closeAndRefresh
      */
     public String getCloseAndRefresh() {
@@ -144,6 +182,7 @@ public class WebidHelper {
 
     /**
      * Code for: Close this window, and refresh parent window.
+     *
      * @param closeAndRefresh the closeAndRefresh to set
      */
     public void setCloseAndRefresh() {
@@ -159,8 +198,7 @@ public class WebidHelper {
         sb.append("</head>");
         sb.append("<body onload=\"closeAndRefresh()\">");
         sb.append("</body>");
-        sb.append("</html>");        
+        sb.append("</html>");
         this.closeAndRefresh = sb.toString();
     }
-    
 }
