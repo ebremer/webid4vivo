@@ -99,7 +99,8 @@ public class ebexp extends HttpServlet {
                 out.println("<tr><td>WebID</td><td><input type=\"text\" name=\"webid\" maxlength=\"200\" value=\"" + x.getProfileUri(request) + "\" readonly></td></tr>");
                 out.println("<tr><td>Number Days Valid</td><td><input type=\"text\" name=\"days\" maxlength=\"100\" value=\"365\"></td></tr>");
                 out.println("<tr><td>&nbsp;</td><td>&nbsp;</td></tr>");
-                out.println("<tr><td colspan=\"2\" align=\"center\"><input type=\"submit\" name=\"createcert\" value=\"Generate\"></td></tr>");
+                out.println("<tr><td><input type=\"submit\" name=\"createcert\" value=\"Generate\"></td>");
+                out.println("<td><button type=\"button\" value=\"Cancel\" onClick=\"window.close();\">Cancel</button><td></tr>");
                 out.println("</table>");
 
                 out.println("</form>");
