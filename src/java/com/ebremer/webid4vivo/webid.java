@@ -66,18 +66,15 @@ public class webid
     
     public String getSparqlQuery()
     {
-        String sp = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ";
+        String sp = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ";
         sp = sp.concat("PREFIX : <http://www.w3.org/ns/auth/cert#> ");
         sp = sp.concat("PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> ");
         //sp = sp.concat("ASK {?webid :key [ :modulus ?mod; :exponent ?exp; ] .}");
         sp = sp.concat("ASK {<" + uri + "> :key [ :modulus \"" + modulus + "\"^^xsd:hexBinary; :exponent " + exponent + "; ] .}");
-        System.out.println("SPARQL : " + sp);
+        //System.out.println("SPARQL : " + sp);
         return sp;
     }
 
-        
-
-    
     public boolean verified() 
     {
         model = ModelFactory.createDefaultModel();

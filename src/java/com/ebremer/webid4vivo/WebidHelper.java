@@ -19,7 +19,12 @@ import com.hp.hpl.jena.update.UpdateAction;
 import edu.cornell.mannlib.vedit.beans.LoginStatusBean;
 import edu.cornell.mannlib.vitro.webapp.beans.UserAccount;
 import edu.cornell.mannlib.vitro.webapp.controller.VitroRequest;
+import edu.cornell.mannlib.vitro.webapp.dao.UserAccountsDao;
+import edu.cornell.mannlib.vitro.webapp.dao.WebappDaoFactory;
+import java.util.ArrayList;
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 /**
  *
@@ -54,6 +59,38 @@ public class WebidHelper {
         return LoginStatusBean.getCurrentUser(vreq);
     }
 
+
+    /**
+     * Get User's Account information by email. 
+     * Override LoginStatusBean.getCurrentUser()
+     * @param session
+     * @param userEmail
+     * @return 
+     */
+    public static UserAccount getUserAccount(HttpSession session, String userEmail) {
+        if (session == null) {
+            return null;
+        }
+
+        ServletContext ctx = session.getServletContext();
+        WebappDaoFactory wadf = (WebappDaoFactory) ctx.getAttribute("webappDaoFactory");
+        if (wadf == null) {
+            System.out.println("No WebappDaoFactory");
+            return null;
+        }
+
+        UserAccountsDao userAccountsDao = wadf.getUserAccountsDao();
+        if (userAccountsDao == null) {
+            System.out.println("No UserAccountsDao");
+            return null;
+        }
+
+        // a different way, by external auth id:
+        //    return Authenticator.getInstance(request).getAccountForExternalAuth(webidAuthID);
+        
+        return userAccountsDao.getUserAccountByEmail(userEmail);
+    }
+    
     /**
      * Update vivo with person's webid.
      *
@@ -78,10 +115,12 @@ public class WebidHelper {
             sb.append("<");
             sb.append(profileURI.trim());
             sb.append("> ");
-            sb.append("<http://vivo.stonybrook.edu/ontology/vivo-sbu/webid>  \"");
+            sb.append("<http://vivo.stonybrook.edu/ontology/vivo-sbu/webid>  \""); // STR
+            //sb.append("<http://vivo.stonybrook.edu/ontology/vivo-sbu/webid>  <"); // URI
             sb.append(webid.trim());
-            sb.append("\"^^<http://www.w3.org/2001/XMLSchema#string> . }");
-            sb.append(". }");
+            //sb.append("> . }"); // URI
+            sb.append("\"^^<http://www.w3.org/2001/XMLSchema#string> . }"); // STR
+            sb.append(". }"); 
 
             System.out.println("INSERT DATA: " + sb);
 
@@ -103,12 +142,13 @@ public class WebidHelper {
 
         String email = "";
 
-        // NOTE: FOR NOW WEBID IS STRING. LATER -- URI.
         StringBuffer queryString = new StringBuffer();
-        queryString.append("SELECT ?s ?email WHERE { ");
-        queryString.append("?s <http://vivo.stonybrook.edu/ontology/vivo-sbu/webid>  \"");
+        queryString.append("SELECT ?email WHERE { ");
+        queryString.append("?s <http://vivo.stonybrook.edu/ontology/vivo-sbu/webid>  \""); // STR
+        //queryString.append("?s <http://vivo.stonybrook.edu/ontology/vivo-sbu/webid>  <"); // URI
         queryString.append(webid.trim());
-        queryString.append("\"^^<http://www.w3.org/2001/XMLSchema#string>; <http://vivoweb.org/ontology/core#primaryEmail> ?email . }");
+        //queryString.append(">; <http://vivoweb.org/ontology/core#primaryEmail> ?email . }"); // URI
+        queryString.append("\"^^<http://www.w3.org/2001/XMLSchema#string>; <http://vivoweb.org/ontology/core#primaryEmail> ?email . }"); // STR
         System.out.println("getEmail(): " + queryString);
 
         com.hp.hpl.jena.query.Query query = QueryFactory.create(queryString.toString());
@@ -128,6 +168,51 @@ public class WebidHelper {
 
         return email;
 
+    }
+    
+    /**
+     * 
+     * @param request
+     * @return 
+     */
+    public ArrayList getWebIds(HttpServletRequest request)
+    {
+            StringBuffer sb = new StringBuffer();
+            
+            StringBuffer queryString = new StringBuffer();
+            queryString.append("SELECT ?webid WHERE { ");
+            queryString.append("<");
+            queryString.append(getProfileUri(request));
+            queryString.append(">  ");
+            queryString.append("<http://vivo.stonybrook.edu/ontology/vivo-sbu/webid> ?webid . }");
+            System.out.println("listWebids: " + queryString);
+
+            com.hp.hpl.jena.query.Query query = QueryFactory.create(queryString.toString());
+
+            OntModel ontModel = getOntModel(request);
+
+            QueryExecution qe = QueryExecutionFactory.create(query, ontModel);
+
+            ArrayList webidList = new ArrayList();
+            ResultSet results = qe.execSelect();
+            for (; results.hasNext();) {
+                QuerySolution qsoln = results.nextSolution();
+                
+                // WEBID AS STRING:
+                Literal really = qsoln.getLiteral("webid");
+                webidList.add((String) really.getString());
+                
+                // WEBID AS URI:
+                //Resource really = qsoln.getResource("s");
+                //webidList.add(really.getURI());
+                
+                // TODO: ADD ROLE.
+                //out.println("<tr><td>" + really.getString() + "</td><td>Self-Edit</td></tr>");
+            }
+            qe.close();
+            
+            return webidList;
+        
     }
 
     /**
