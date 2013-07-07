@@ -21,6 +21,8 @@ import edu.cornell.mannlib.vitro.webapp.beans.UserAccount;
 import edu.cornell.mannlib.vitro.webapp.controller.VitroRequest;
 import edu.cornell.mannlib.vitro.webapp.dao.UserAccountsDao;
 import edu.cornell.mannlib.vitro.webapp.dao.WebappDaoFactory;
+import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -59,13 +61,13 @@ public class WebidHelper {
         return LoginStatusBean.getCurrentUser(vreq);
     }
 
-
     /**
-     * Get User's Account information by email. 
-     * Override LoginStatusBean.getCurrentUser()
+     * Get User's Account information by email. Override
+     * LoginStatusBean.getCurrentUser()
+     *
      * @param session
      * @param userEmail
-     * @return 
+     * @return
      */
     public static UserAccount getUserAccount(HttpSession session, String userEmail) {
         if (session == null) {
@@ -87,44 +89,57 @@ public class WebidHelper {
 
         // a different way, by external auth id:
         //    return Authenticator.getInstance(request).getAccountForExternalAuth(webidAuthID);
-        
+
         return userAccountsDao.getUserAccountByEmail(userEmail);
     }
-    
+
     /**
      * Update vivo with person's webid.
      *
      * @param request
      */
-    public void updateVivo(HttpServletRequest request, String webid) {
+    public void updateVivo(HttpServletRequest request, X509Certificate cert) {
         VitroRequest vreq = new VitroRequest(request);
-
-        UserAccount userAccount = LoginStatusBean.getCurrentUser(vreq);
-        String email = userAccount.getEmailAddress();
-
-        String profileURI = getProfileUri(request);
 
         try {
             Dataset dataset = vreq.getDataset();
             GraphStore graphStore = GraphStoreFactory.create(dataset);
 
+            RSAPublicKey certpublickey = (RSAPublicKey) cert.getPublicKey();
+            String modulus = String.format("%0288x", certpublickey.getModulus());
+            String exponent = String.valueOf(certpublickey.getPublicExponent());
+
             StringBuffer sb = new StringBuffer();
+
             sb.append("INSERT DATA ");
             sb.append("{ GRAPH <http://vitro.mannlib.cornell.edu/default/vitro-kb-2> ");
             sb.append("{ ");
+
+            // THE KEY (BLANK NODE)
             sb.append("<");
-            sb.append(profileURI.trim());
+            sb.append(request.getParameter("webid"));
             sb.append("> ");
-            sb.append("<http://vivo.stonybrook.edu/ontology/vivo-sbu/webid>  \""); // STR
-            //sb.append("<http://vivo.stonybrook.edu/ontology/vivo-sbu/webid>  <"); // URI
-            sb.append(webid.trim());
-            //sb.append("> . }"); // URI
-            sb.append("\"^^<http://www.w3.org/2001/XMLSchema#string> . }"); // STR
-            sb.append(". }"); 
+            sb.append(" <http://www.w3.org/ns/auth/cert#key> _:bnode153153856 . ");
 
-            System.out.println("INSERT DATA: " + sb);
+            // PUBLIC KEY
+            sb.append("_:bnode153153856 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/auth/cert#RSAPublicKey> . ");
+            // MODULUS
+            sb.append("_:bnode153153856 <http://www.w3.org/ns/auth/cert#modulus> ");
+            sb.append("\"");
+            sb.append(modulus);
+            sb.append("\"^^<http://www.w3.org/2001/XMLSchema#hexBinary>. ");
 
+            // EXPONENT
+            sb.append("_:bnode153153856 <http://www.w3.org/ns/auth/cert#exponent> \"");
+            sb.append(exponent);
+            sb.append("\"^^<http://www.w3.org/2001/XMLSchema#integer> . ");
+
+            sb.append("}");
+            sb.append("}");
+
+            System.out.println(sb.toString());
             UpdateAction.parseExecute(sb.toString(), graphStore);
+
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -143,12 +158,9 @@ public class WebidHelper {
         String email = "";
 
         StringBuffer queryString = new StringBuffer();
-        queryString.append("SELECT ?email WHERE { ");
-        queryString.append("?s <http://vivo.stonybrook.edu/ontology/vivo-sbu/webid>  \""); // STR
-        //queryString.append("?s <http://vivo.stonybrook.edu/ontology/vivo-sbu/webid>  <"); // URI
-        queryString.append(webid.trim());
-        //queryString.append(">; <http://vivoweb.org/ontology/core#primaryEmail> ?email . }"); // URI
-        queryString.append("\"^^<http://www.w3.org/2001/XMLSchema#string>; <http://vivoweb.org/ontology/core#primaryEmail> ?email . }"); // STR
+        queryString.append("SELECT ?email WHERE { <");
+        queryString.append(webid.trim()); // WEBID == PERSON URI.
+        queryString.append("> <http://vivoweb.org/ontology/core#primaryEmail> ?email . }");
         System.out.println("getEmail(): " + queryString);
 
         com.hp.hpl.jena.query.Query query = QueryFactory.create(queryString.toString());
@@ -161,7 +173,7 @@ public class WebidHelper {
             QuerySolution qsoln = results.nextSolution();
 
             Literal really = qsoln.getLiteral("email");
-            email = really.getString();            
+            email = really.getString();
         }
         qe.close();
         System.out.println("email: " + email);
@@ -169,50 +181,49 @@ public class WebidHelper {
         return email;
 
     }
-    
+
     /**
-     * 
+     *
      * @param request
-     * @return 
+     * @return
      */
-    public ArrayList getWebIds(HttpServletRequest request)
-    {
-            StringBuffer sb = new StringBuffer();
-            
-            StringBuffer queryString = new StringBuffer();
-            queryString.append("SELECT ?webid WHERE { ");
-            queryString.append("<");
-            queryString.append(getProfileUri(request));
-            queryString.append(">  ");
-            queryString.append("<http://vivo.stonybrook.edu/ontology/vivo-sbu/webid> ?webid . }");
-            System.out.println("listWebids: " + queryString);
+    public ArrayList getWebIds(HttpServletRequest request) {
+        StringBuffer sb = new StringBuffer();
 
-            com.hp.hpl.jena.query.Query query = QueryFactory.create(queryString.toString());
+        StringBuffer queryString = new StringBuffer();
+        queryString.append("SELECT ?webid WHERE { ");
+        queryString.append("<");
+        queryString.append(getProfileUri(request));
+        queryString.append(">  <http://www.w3.org/ns/auth/cert#key> ?webid . "); 
+        //queryString.append("<http://vivo.stonybrook.edu/ontology/vivo-sbu/webid> ?webid . }");
+        System.out.println("listWebids: " + queryString);
 
-            OntModel ontModel = getOntModel(request);
+        com.hp.hpl.jena.query.Query query = QueryFactory.create(queryString.toString());
 
-            QueryExecution qe = QueryExecutionFactory.create(query, ontModel);
+        OntModel ontModel = getOntModel(request);
 
-            ArrayList webidList = new ArrayList();
-            ResultSet results = qe.execSelect();
-            for (; results.hasNext();) {
-                QuerySolution qsoln = results.nextSolution();
-                
-                // WEBID AS STRING:
-                Literal really = qsoln.getLiteral("webid");
-                webidList.add((String) really.getString());
-                
-                // WEBID AS URI:
-                //Resource really = qsoln.getResource("s");
-                //webidList.add(really.getURI());
-                
-                // TODO: ADD ROLE.
-                //out.println("<tr><td>" + really.getString() + "</td><td>Self-Edit</td></tr>");
-            }
-            qe.close();
-            
-            return webidList;
-        
+        QueryExecution qe = QueryExecutionFactory.create(query, ontModel);
+
+        ArrayList webidList = new ArrayList();
+        ResultSet results = qe.execSelect();
+        for (; results.hasNext();) {
+            QuerySolution qsoln = results.nextSolution();
+
+            // WEBID AS STRING:
+            //Literal really = qsoln.getLiteral("webid");
+            //webidList.add((String) really.getString());
+
+            // WEBID AS URI:
+            Resource really = qsoln.getResource("s");
+            webidList.add(really.getURI());
+
+            // TODO: ADD ROLE.
+            //out.println("<tr><td>" + really.getString() + "</td><td>Self-Edit</td></tr>");
+        }
+        qe.close();
+
+        return webidList;
+
     }
 
     /**

@@ -15,7 +15,9 @@ import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
+import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.shared.Lock;
 import com.hp.hpl.jena.sparql.vocabulary.FOAF;
 import com.hp.hpl.jena.update.GraphStore;
@@ -28,6 +30,7 @@ import edu.cornell.mannlib.vitro.webapp.dao.jena.ModelContext;
 import edu.cornell.mannlib.vitro.webapp.dao.jena.OntModelSelector;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.String;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -72,7 +75,8 @@ public class tdexp extends HttpServlet {
         out.println("<body>");
         out.println("<h1>Servlet tdexp</h1>");
 
-        readAndWrite(request, response, out);
+        arqUpdate1();
+        //readAndWrite(request, response, out);
         
         //out.println(getUserAccount(request, ""));
 
@@ -81,6 +85,56 @@ public class tdexp extends HttpServlet {
         out.close();
 
     }
+
+    protected void arqUpdate1() {
+
+        try {
+            Dataset dataset = this.vreq.getDataset();
+            GraphStore graphStore = GraphStoreFactory.create(dataset);
+
+            StringBuffer sb = new StringBuffer();
+            sb.append("INSERT DATA ");
+            sb.append("{ GRAPH <http://vitro.mannlib.cornell.edu/default/vitro-kb-2> ");
+            sb.append("{ ");
+            
+            // PUBLIC KEY
+            sb.append("_:bnode153153856 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/auth/cert#RSAPublicKey>. ");
+            // MODULUS
+            sb.append("_:bnode153153856 <http://www.w3.org/ns/auth/cert#modulus> ");
+            sb.append("\"C9A83116B7465E246622F0DEE7F8752886DE54D59B739DEA2FBE89B0A5AAEAD8B1FC7A58B7BE5248C4CFC6291AF7110C576E1931A50A29884F647735692966345475B15FFE529E24A912D37F2D101AB37EE201E35F38D05EC66B1A8D4B5C0043C05979AE532");
+            sb.append("22D4C153905E1B63DCCC17893DE7E5FC66669A8983FE9A8E1B0E57916793E8E22C9C700D07A9B51A729A1852CFFBFE51F8E9A7E7CDD0C054531C3960C669290E93AAE529145E981B14F0E77CB5FC3D985E43DD6642802CF4F7DDE25EA9EFDD255CAB3786BA2C");
+            sb.append("2263FA3D6D6F86BB48E9149F4D300ECF2661D05C2E19DE89FE6E7D8057232CBEE4746E9D705795905A8D0EBC99043C6261A36493B\"^^<http://www.w3.org/2001/XMLSchema#hexBinary>. ");
+            // EXPONENT
+            sb.append("_:bnode153153856 <http://www.w3.org/ns/auth/cert#exponent> \"65537\"^^<http://www.w3.org/2001/XMLSchema#integer>. ");
+            // THE KEY (BLANK NODE)
+            sb.append("<http://vivo.stonybrook.edu/individual/n1431> <http://www.w3.org/ns/auth/cert#key> _:bnode153153856. ");
+            
+            sb.append("}");
+            sb.append("}");
+
+            System.out.println(sb.toString());
+            UpdateAction.parseExecute(sb.toString(), graphStore);
+        } catch (Exception ex) {
+            System.out.println("arqUpdate(): " + ex.toString());
+        }
+
+
+        /*
+         // USE REQUEST OBJECT
+        
+         UpdateRequest request = UpdateFactory.create();
+        
+         request.add("DROP ALL")
+         .add("CREATE GRAPH <http://example/g2>")
+         .add("LOAD <file:etc/update-data.ttl> INTO <http://example/g2>");
+
+         // And perform the operations.
+         UpdateAction.execute(request, graphStore);
+                 
+         */
+
+    }
+
     
     /**
      * Testing.
@@ -279,6 +333,47 @@ public class tdexp extends HttpServlet {
     }
 
     /**
+     * Insert "tammy foaf:knows erich".
+     * WORKS.
+     * @param request 
+     */
+    protected void m_insert(HttpServletRequest request) {
+        
+        System.out.println("Insert a record...");
+        
+        
+        try {
+
+            // SO FAR WE HAVE ERICH FOAF:KNOWS TAMMY.
+            // LET'S PUT TAMMY FOAF:KNOWS ERICH.
+            
+            // Using this model:
+            OntModelSelector ontModelSelector = ModelContext.getOntModelSelector(getServletContext());
+            OntModel model = ontModelSelector.getABoxModel();
+            
+            Resource erich = model.getResource("http://vivo.stonybrook.edu/individual/n1559");
+            Resource tammy = model.getResource("http://vivo.stonybrook.edu/individual/n1431");
+
+            // Create properties for the different types of relationships to represent
+            Property hasCert = model.createProperty("http://www.w3.org/ns/auth/cert#","X509Certificate");
+
+            // Create a Resource for each thing, identified by their URI
+            Resource certResource = model.createResource("http://yabbadabbadoo1/foaf.me");
+            
+            // Create statements
+            //Statement statement = model.createStatement(tammy,FOAF.knows,erich);
+            Statement statement = model.createStatement(tammy,hasCert,certResource);
+
+            // add the created statement to the model
+            model.add(statement);            
+
+        } catch (Exception idk) {
+            System.out.println("m_insert(): " + idk.toString());
+        }
+
+    }
+
+    /**
      * Prove: I can insert data. Insert "erich foaf:knows tammy".
      * http://jena.sourceforge.net/tutorial/RDF_API/
      */
@@ -307,6 +402,7 @@ public class tdexp extends HttpServlet {
 
     }
 
+    
     /**
      * Insert Attempt #2.
      * http://pic.dhe.ibm.com/infocenter/db2luw/v10r1/topic/com.ibm.swg.im.dbclient.rdf.doc/doc/c0060617.html.

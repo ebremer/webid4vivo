@@ -55,7 +55,6 @@ public class WebidController extends HttpServlet {
 
     }
 
-
     /**
      * Person clicked login with webid.
      *
@@ -112,20 +111,19 @@ public class WebidController extends HttpServlet {
             cert = certs[0];
             wid = new webid(cert);
 
-            // Verify webid cert.
-            if (wid.verified()) {
-                System.out.println(new Date());
-                System.out.println("VERIFIED. " + wid.getURI());
+            boolean verified = wid.verified();
+            //verified = true; // TEMPORARY.
+            System.out.println(new Date());
+            System.out.println(wid.getSparqlQuery());
+
+            if (verified) {
                 // Find user acct associated with this webid.
                 return new WebidHelper().getEmail(request, wid.getURI());
             } else {
-                System.out.println(new Date());
                 System.out.println("QueryExecution execAsk() returned false.  Cert not verified.");
-                System.out.println(wid.getSparqlQuery());
                 return null;
 
             }
-
 
         }
 
@@ -148,7 +146,7 @@ public class WebidController extends HttpServlet {
         }
 
     }
-    
+
     /**
      * Successful login.
      *
@@ -315,7 +313,15 @@ public class WebidController extends HttpServlet {
 
     }
 
-
+    /**
+     *
+     * @param request
+     * @return
+     */
+    private Authenticator getAuthenticator(HttpServletRequest request) {
+        return Authenticator.getInstance(request);
+    }
+    
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**
      * Handles the HTTP
@@ -352,7 +358,7 @@ public class WebidController extends HttpServlet {
 
             String webid = request.getParameter("txtWebId");
             WebidHelper x = new WebidHelper();
-            x.updateVivo(request, webid);
+            //////////////x.updateVivo(request); // TODO - CREATE CERT OBJECT FROM URI STRING
 
             out.println(x.getCloseAndRefresh());
         } finally {
@@ -361,12 +367,4 @@ public class WebidController extends HttpServlet {
 
     }
 
-    /**
-     *
-     * @param request
-     * @return
-     */
-    private Authenticator getAuthenticator(HttpServletRequest request) {
-        return Authenticator.getInstance(request);
-    }
 }

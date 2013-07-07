@@ -92,12 +92,31 @@ public class ebexp extends HttpServlet {
                 out.println("Your WebID will be your VIVO data URI...");
                 out.println("<form method=\"post\">");
                 out.println("<keygen id=\"pubkey\" name=\"pubkey\" challenge=\"randomchars\" keytype=\"rsa\" hidden>");
+                out.println("<input type=\"hidden\" name=\"first\" value=\"" + u.getFirstName() + "\" >");
+                out.println("<input type=\"hidden\" name=\"last\" value=\"" + u.getLastName() + "\" >");
+                out.println("<input type=\"hidden\" name=\"webid\" value=\"" + x.getProfileUri(request) + "\" >");
 
                 out.println("<table>");
-                out.println("<tr><td>First Name</td><td><input type=\"text\" name=\"first\" maxlength=\"100\" value=\"" + u.getFirstName() + "\" readonly></td></tr>");
-                out.println("<tr><td>Last Name</td><td><input type=\"text\" name=\"last\" maxlength=\"100\" value=\"" + u.getLastName() + "\" readonly></td></tr>");
-                out.println("<tr><td>WebID</td><td><input type=\"text\" name=\"webid\" maxlength=\"200\" value=\"" + x.getProfileUri(request) + "\" readonly></td></tr>");
-                out.println("<tr><td>Number Days Valid</td><td><input type=\"text\" name=\"days\" maxlength=\"100\" value=\"365\"></td></tr>");
+                out.println("<tr>");
+                out.println("<td align=\"right\">First Name</td>");
+                out.println("<td>" + u.getFirstName() + "</td>");
+                out.println("</tr>");
+
+                out.println("<tr>");
+                out.println("<td align=\"right\">Last Name</td>");
+                out.println("<td>" + u.getLastName() + "</td>");
+                out.println("</tr>");
+
+                out.println("<tr>");
+                out.println("<td align=\"right\">WebID</td>");
+                out.println("<td>" + x.getProfileUri(request) + "</td>");
+                out.println("</tr>");
+
+                out.println("<tr>");
+                out.println("<td align=\"right\">Number Days Valid</td>");
+                out.println("<td><input type=\"text\" name=\"days\" maxlength=\"100\" value=\"365\"></td>");
+                out.println("</tr>");
+
                 out.println("<tr><td>&nbsp;</td><td>&nbsp;</td></tr>");
                 out.println("<tr><td><input type=\"submit\" name=\"createcert\" value=\"Generate\"></td>");
                 out.println("<td><button type=\"button\" value=\"Cancel\" onClick=\"window.close();\">Cancel</button><td></tr>");
@@ -114,38 +133,6 @@ public class ebexp extends HttpServlet {
             System.out.println("Somehow, the user is null.");
         }
 
-    }
-
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-    /**
-     * Handles the HTTP
-     * <code>GET</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        printForm(request, response);
-    }
-
-    /**
-     * Handles the HTTP
-     * <code>POST</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        processForm(request, response);
-        updateVivo(request, request.getParameter("webid"));
-        closeAndRefresh(response);
     }
 
     /**
@@ -168,17 +155,6 @@ public class ebexp extends HttpServlet {
     /**
      *
      * @param request
-     * @param webid
-     */
-    public void updateVivo(HttpServletRequest request, String webid) {
-
-        WebidHelper x = new WebidHelper();
-        x.updateVivo(request, webid);
-    }
-
-    /**
-     *
-     * @param request
      * @param response
      * @throws IOException
      */
@@ -188,8 +164,7 @@ public class ebexp extends HttpServlet {
         String first = request.getParameter("first");
         String last = request.getParameter("last");
         String webid = request.getParameter("webid");
-        //String webid = "http://www.ebremer.com/foaf.rdf";
-        String sDays = request.getParameter("days"); // CONVERT TO NUMBER
+        String sDays = request.getParameter("days");
         int iDays = Integer.parseInt(sDays.trim());
 
         Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
@@ -211,7 +186,7 @@ public class ebexp extends HttpServlet {
         nb.addRDN(BCStyle.O, "WebID4VIVO");
         nb.addRDN(BCStyle.OU, "The Community Of Self Signers");
 
-        // The VIVO data URI needs to be fed in here
+        // The VIVO data URI is fed in here
         nb.addRDN(BCStyle.UID, webid);
 
         // We need to decide what will go here since this is exposed when user select WebID in browser
@@ -273,7 +248,11 @@ public class ebexp extends HttpServlet {
         is1.close();
         response.setContentType("application/x-x509-user-cert");
         ServletOutputStream out = response.getOutputStream();
-        // Send WebID certificate to client
+        
+        // OK WE'RE DONE CREATING THE CERT! UPDATE VIVO.
+        new WebidHelper().updateVivo(request, theCert);
+        
+        // Finally, send WebID certificate to client
         try {
             StringWriter sw = new StringWriter();
             PEMWriter pemWriter = new PEMWriter(sw);
@@ -281,6 +260,7 @@ public class ebexp extends HttpServlet {
             pemWriter.close();
             byte[] ser = sw.toString().getBytes("UTF-8");
             out.write(ser);
+
         } finally {
             out.close();
         }
@@ -304,6 +284,38 @@ public class ebexp extends HttpServlet {
                 Logger.getLogger(ebexp.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
+    }
+
+    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
+    /**
+     * Handles the HTTP
+     * <code>GET</code> method.
+     *
+     * @param request servlet request
+     * @param response servlet response
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        printForm(request, response);
+    }
+
+    /**
+     * Handles the HTTP
+     * <code>POST</code> method.
+     *
+     * @param request servlet request
+     * @param response servlet response
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        processForm(request, response);
+        //updateVivo(request, request.getParameter("webid"));
+        closeAndRefresh(response);
     }
 
     /**
