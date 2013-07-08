@@ -219,9 +219,21 @@ public class WebidController extends HttpServlet {
             out.println("<body>");
 
             WebidHelper x = new WebidHelper();
-            ArrayList webidList = x.getWebIds(request);
+            ArrayList webidList = null;
+            
+            boolean found = false;
+            try
+            {
+                webidList = x.getWebIds(request);
+                if (webidList.isEmpty())
+                    found = false;
+            }
+            catch(NullPointerException npe)
+            {
+                found = false;
+            }
 
-            if (webidList.isEmpty()) {
+            if (!found) {
                 out.println("You have no WebID's associated with your profile.<br>");
                 out.println("Click <a href=\"gollum?3\" target=\"addwin\">Add</a> to associate an existing external WebID.<br>");
                 out.println("Or click <a href=\"ebexp\" target=\"ebexpwin\">Create</a> to create a new WebID.");
@@ -355,12 +367,10 @@ public class WebidController extends HttpServlet {
         PrintWriter out = null;
         try {
             out = response.getWriter();
-
-            String webid = request.getParameter("txtWebId");
             WebidHelper x = new WebidHelper();
-            //////////////x.updateVivo(request); // TODO - CREATE CERT OBJECT FROM URI STRING
-
+            x.updateVivoWithExternalWebid(request); 
             out.println(x.getCloseAndRefresh());
+            
         } finally {
             out.close();
         }

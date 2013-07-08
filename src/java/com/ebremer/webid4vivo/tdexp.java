@@ -98,16 +98,16 @@ public class tdexp extends HttpServlet {
             sb.append("{ ");
             
             // PUBLIC KEY
-            sb.append("_:bnode153153856 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/auth/cert#RSAPublicKey>. ");
+            sb.append("_:bnode <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/auth/cert#RSAPublicKey>. ");
             // MODULUS
-            sb.append("_:bnode153153856 <http://www.w3.org/ns/auth/cert#modulus> ");
+            sb.append("_:bnode <http://www.w3.org/ns/auth/cert#modulus> ");
             sb.append("\"C9A83116B7465E246622F0DEE7F8752886DE54D59B739DEA2FBE89B0A5AAEAD8B1FC7A58B7BE5248C4CFC6291AF7110C576E1931A50A29884F647735692966345475B15FFE529E24A912D37F2D101AB37EE201E35F38D05EC66B1A8D4B5C0043C05979AE532");
             sb.append("22D4C153905E1B63DCCC17893DE7E5FC66669A8983FE9A8E1B0E57916793E8E22C9C700D07A9B51A729A1852CFFBFE51F8E9A7E7CDD0C054531C3960C669290E93AAE529145E981B14F0E77CB5FC3D985E43DD6642802CF4F7DDE25EA9EFDD255CAB3786BA2C");
             sb.append("2263FA3D6D6F86BB48E9149F4D300ECF2661D05C2E19DE89FE6E7D8057232CBEE4746E9D705795905A8D0EBC99043C6261A36493B\"^^<http://www.w3.org/2001/XMLSchema#hexBinary>. ");
             // EXPONENT
-            sb.append("_:bnode153153856 <http://www.w3.org/ns/auth/cert#exponent> \"65537\"^^<http://www.w3.org/2001/XMLSchema#integer>. ");
+            sb.append("_:bnode <http://www.w3.org/ns/auth/cert#exponent> \"65537\"^^<http://www.w3.org/2001/XMLSchema#integer>. ");
             // THE KEY (BLANK NODE)
-            sb.append("<http://vivo.stonybrook.edu/individual/n1431> <http://www.w3.org/ns/auth/cert#key> _:bnode153153856. ");
+            sb.append("<http://vivo.stonybrook.edu/individual/n1431> <http://www.w3.org/ns/auth/cert#key> _:bnode. ");
             
             sb.append("}");
             sb.append("}");

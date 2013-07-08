@@ -1,7 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.ebremer.webid4vivo;
 
 import com.hp.hpl.jena.ontology.OntModel;
@@ -98,7 +94,48 @@ public class WebidHelper {
      *
      * @param request
      */
-    public void updateVivo(HttpServletRequest request, X509Certificate cert) {
+    public void updateVivoWithExternalWebid(HttpServletRequest request) {
+        VitroRequest vreq = new VitroRequest(request);
+        String webid = request.getParameter("txtWebId");
+
+        try {
+            Dataset dataset = vreq.getDataset();
+            GraphStore graphStore = GraphStoreFactory.create(dataset);
+
+            StringBuffer sb = new StringBuffer();
+            
+            sb.append("INSERT DATA ");
+            sb.append("{ GRAPH <http://vitro.mannlib.cornell.edu/default/vitro-kb-2> ");
+            sb.append("{ ");
+
+            sb.append("<");
+            sb.append(getProfileUri(request));
+            sb.append("> ");
+
+            sb.append("<http://www.w3.org/2002/07/owl#sameAs> ");
+
+            sb.append("<");
+            sb.append(webid);
+            sb.append("> ");
+            
+            sb.append(" . ");
+            sb.append("}");
+            sb.append("}");
+
+            System.out.println(sb.toString());
+            UpdateAction.parseExecute(sb.toString(), graphStore);
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+    
+    /**
+     * Update vivo with person's webid.
+     *
+     * @param request
+     */
+    public void updateVivoWithGeneratedWebid(HttpServletRequest request, X509Certificate cert) {
         VitroRequest vreq = new VitroRequest(request);
 
         try {
@@ -114,26 +151,22 @@ public class WebidHelper {
             sb.append("INSERT DATA ");
             sb.append("{ GRAPH <http://vitro.mannlib.cornell.edu/default/vitro-kb-2> ");
             sb.append("{ ");
-
             // THE KEY (BLANK NODE)
             sb.append("<");
             sb.append(request.getParameter("webid"));
             sb.append("> ");
-            sb.append(" <http://www.w3.org/ns/auth/cert#key> _:bnode153153856 . ");
-
+            sb.append(" <http://www.w3.org/ns/auth/cert#key> _:bnode . ");
             // PUBLIC KEY
-            sb.append("_:bnode153153856 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/auth/cert#RSAPublicKey> . ");
+            sb.append("_:bnode <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/auth/cert#RSAPublicKey> . ");
             // MODULUS
-            sb.append("_:bnode153153856 <http://www.w3.org/ns/auth/cert#modulus> ");
+            sb.append("_:bnode <http://www.w3.org/ns/auth/cert#modulus> ");
             sb.append("\"");
             sb.append(modulus);
-            sb.append("\"^^<http://www.w3.org/2001/XMLSchema#hexBinary>. ");
-
+            sb.append("\"^^<http://www.w3.org/2001/XMLSchema#hexBinary> . ");
             // EXPONENT
-            sb.append("_:bnode153153856 <http://www.w3.org/ns/auth/cert#exponent> \"");
+            sb.append("_:bnode <http://www.w3.org/ns/auth/cert#exponent> ");
             sb.append(exponent);
-            sb.append("\"^^<http://www.w3.org/2001/XMLSchema#integer> . ");
-
+            sb.append(" . ");
             sb.append("}");
             sb.append("}");
 
@@ -194,9 +227,8 @@ public class WebidHelper {
         queryString.append("SELECT ?webid WHERE { ");
         queryString.append("<");
         queryString.append(getProfileUri(request));
-        queryString.append(">  <http://www.w3.org/ns/auth/cert#key> ?webid . "); 
-        //queryString.append("<http://vivo.stonybrook.edu/ontology/vivo-sbu/webid> ?webid . }");
-        System.out.println("listWebids: " + queryString);
+        queryString.append(">  <http://www.w3.org/2002/07/owl#sameAs> ?webid . }"); 
+        System.out.println("listWebids: " + queryString); 
 
         com.hp.hpl.jena.query.Query query = QueryFactory.create(queryString.toString());
 
@@ -206,6 +238,8 @@ public class WebidHelper {
 
         ArrayList webidList = new ArrayList();
         ResultSet results = qe.execSelect();
+        
+        System.out.println("before loop");
         for (; results.hasNext();) {
             QuerySolution qsoln = results.nextSolution();
 
@@ -214,12 +248,15 @@ public class WebidHelper {
             //webidList.add((String) really.getString());
 
             // WEBID AS URI:
-            Resource really = qsoln.getResource("s");
+            Resource really = qsoln.getResource("webid");
             webidList.add(really.getURI());
+            
+            System.out.println("inside loop");
 
             // TODO: ADD ROLE.
             //out.println("<tr><td>" + really.getString() + "</td><td>Self-Edit</td></tr>");
         }
+        System.out.println("outside loop");
         qe.close();
 
         return webidList;

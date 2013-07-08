@@ -98,22 +98,22 @@ public class ebexp extends HttpServlet {
 
                 out.println("<table>");
                 out.println("<tr>");
-                out.println("<td align=\"right\">First Name</td>");
+                out.println("<td align=\"right\"><b>First Name</b></td>");
                 out.println("<td>" + u.getFirstName() + "</td>");
                 out.println("</tr>");
 
                 out.println("<tr>");
-                out.println("<td align=\"right\">Last Name</td>");
+                out.println("<td align=\"right\"><b>Last Name</b></td>");
                 out.println("<td>" + u.getLastName() + "</td>");
                 out.println("</tr>");
 
                 out.println("<tr>");
-                out.println("<td align=\"right\">WebID</td>");
+                out.println("<td align=\"right\"><b>WebID</b></td>");
                 out.println("<td>" + x.getProfileUri(request) + "</td>");
                 out.println("</tr>");
 
                 out.println("<tr>");
-                out.println("<td align=\"right\">Number Days Valid</td>");
+                out.println("<td align=\"right\"><b>Number Days Valid</b></td>");
                 out.println("<td><input type=\"text\" name=\"days\" maxlength=\"100\" value=\"365\"></td>");
                 out.println("</tr>");
 
@@ -165,7 +165,16 @@ public class ebexp extends HttpServlet {
         String last = request.getParameter("last");
         String webid = request.getParameter("webid");
         String sDays = request.getParameter("days");
-        int iDays = Integer.parseInt(sDays.trim());
+        int iDays = 0;
+        
+        try
+        {
+            iDays = Integer.parseInt(sDays.trim());
+        }
+        catch (NumberFormatException nfe)
+        {
+            iDays = 365;
+        }
 
         Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
 
@@ -250,7 +259,7 @@ public class ebexp extends HttpServlet {
         ServletOutputStream out = response.getOutputStream();
         
         // OK WE'RE DONE CREATING THE CERT! UPDATE VIVO.
-        new WebidHelper().updateVivo(request, theCert);
+        new WebidHelper().updateVivoWithGeneratedWebid(request, theCert);
         
         // Finally, send WebID certificate to client
         try {

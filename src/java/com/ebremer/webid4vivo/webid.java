@@ -59,16 +59,22 @@ public class webid {
         // ASK {?webid :key [ :modulus ?mod; :exponent ?exp; ] .}
 
         StringBuffer sp = new StringBuffer();
-        sp.append("PREFIX : <http://www.w3.org/ns/auth/cert#> ");
+
         sp.append("PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ");
+        sp.append("PREFIX : <http://www.w3.org/ns/auth/cert#> ");
         sp.append("PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> ");
-        sp.append("ASK { <");
+        sp.append("ASK {<");
         sp.append(uri);
-        sp.append("> :key [ :modulus \"");
+        sp.append("> ");
+        sp.append(":key [ :modulus \"");
         sp.append(modulus);
-        sp.append("\"^^xsd:hexBinary; :exponent \"");
+        sp.append("\"^^xsd:hexBinary;");
+        sp.append(":exponent ");
         sp.append(exponent);
-        sp.append("\"^^xsd:integer; ] .}");
+        sp.append("; ] .}");
+
+
+
         return sp.toString();
 
     }
