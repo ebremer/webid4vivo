@@ -17,7 +17,6 @@ import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpSession;
 
 /**
  * Assuming - you've already associated your WebID with your VIVO account.
@@ -63,21 +62,24 @@ public class WebidController extends HttpServlet {
      * @throws IOException
      */
     protected void attemptLogin(HttpServletRequest request, HttpServletResponse response) throws IOException {
+
         String webidAuthID = whoAreYou(request);
-        HttpSession session = request.getSession(false);
 
         if (webidAuthID == null) {
+            // No cert found or selected.
             this.fail(response, CERT);
         } else {
-            UserAccount userAccount = new WebidHelper().getUserAccount(session, webidAuthID);
+
+            UserAccount userAccount = new WebidHelper().getUserAccount(request, webidAuthID);
 
             if (userAccount != null) {
-
-                //session.setAttribute("UserAccount", userAccount);
-
+                // User account found.
+                // Log user in.
+                // Send success message.
                 logYouIn(userAccount, request);
                 success(response);
             } else {
+                // User account not found.
                 fail(response, WHO);
             }
 
@@ -112,13 +114,15 @@ public class WebidController extends HttpServlet {
             wid = new webid(cert);
 
             boolean verified = wid.verified();
-            //verified = true; // TEMPORARY.
-            System.out.println(new Date());
+
+            System.out.println(new Date() + " VERIFIED WEBID");
             System.out.println(wid.getSparqlQuery());
 
             if (verified) {
+                // Get network id to get handle to user account.
+                return new WebidHelper().getNetworkIdForLogin(request, wid.getURI());
                 // Find user acct associated with this webid.
-                return new WebidHelper().getEmail(request, wid.getURI());
+                //return new WebidHelper().getEmail(request, wid.getURI());                
             } else {
                 System.out.println("QueryExecution execAsk() returned false.  Cert not verified.");
                 return null;
@@ -220,16 +224,16 @@ public class WebidController extends HttpServlet {
 
             WebidHelper x = new WebidHelper();
             ArrayList webidList = null;
-            
-            boolean found = false;
-            try
-            {
+
+            boolean found = true;
+            try {
                 webidList = x.getWebIds(request);
-                if (webidList.isEmpty())
+                if (webidList.isEmpty()) {
+                    System.out.println("webidList - isEmpty");
                     found = false;
-            }
-            catch(NullPointerException npe)
-            {
+                }
+            } catch (NullPointerException npe) {
+                System.out.println("webidList - NullPointerException");
                 found = false;
             }
 
@@ -333,7 +337,7 @@ public class WebidController extends HttpServlet {
     private Authenticator getAuthenticator(HttpServletRequest request) {
         return Authenticator.getInstance(request);
     }
-    
+
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**
      * Handles the HTTP
@@ -368,13 +372,12 @@ public class WebidController extends HttpServlet {
         try {
             out = response.getWriter();
             WebidHelper x = new WebidHelper();
-            x.updateVivoWithExternalWebid(request); 
+            x.updateVivoWithExternalWebid(request);
             out.println(x.getCloseAndRefresh());
-            
+
         } finally {
             out.close();
         }
 
     }
-
 }

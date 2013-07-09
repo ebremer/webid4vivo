@@ -78,7 +78,7 @@ public class ebexp extends HttpServlet {
         PrintWriter out = response.getWriter();
 
         WebidHelper x = new WebidHelper();
-        UserAccount u = x.getUserAccount(request);
+        UserAccount u = x.getCurrentUserAccount(request);
         if (u != null) {
             try {
                 out.println("<!DOCTYPE html>");
