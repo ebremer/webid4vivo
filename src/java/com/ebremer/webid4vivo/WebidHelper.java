@@ -98,6 +98,17 @@ public class WebidHelper {
     }
 
     /**
+     *
+     * @param request
+     * @param user
+     * @throws
+     * edu.cornell.mannlib.vitro.webapp.controller.authenticate.Authenticator.LoginNotPermitted
+     */
+    protected void recordLogin(HttpServletRequest request, UserAccount user) throws Authenticator.LoginNotPermitted {
+        Authenticator.getInstance(request).recordLoginAgainstUserAccount(user, LoginStatusBean.AuthenticationSource.EXTERNAL);
+    }
+
+    /**
      * Update vivo with person's webid.
      *
      * @param request
@@ -107,8 +118,9 @@ public class WebidHelper {
         String webid = request.getParameter("txtWebId");
 
         try {
-            Dataset dataset = vreq.getDataset();
-            GraphStore graphStore = GraphStoreFactory.create(dataset);
+            //Dataset dataset = vreq.getDataset();
+            //GraphStore graphStore = GraphStoreFactory.create(dataset);
+            OntModel ontModel = getOntModel(request);
 
             StringBuffer sb = new StringBuffer();
 
@@ -119,19 +131,23 @@ public class WebidHelper {
             sb.append("<");
             sb.append(getProfileUri(request));
             sb.append("> ");
+            // SAMEAS DOES EVIL THINGS.
+            // sb.append("<http://www.w3.org/2002/07/owl#sameAs> ");
+            sb.append(" <http://vivo.stonybrook.edu/local#hasWebIDAssociation> _:bnode1. ");
 
-            sb.append("<http://www.w3.org/2002/07/owl#sameAs> ");
-
+            sb.append("_:bnode1 <http://vivo.stonybrook.edu/local#me> \"true\"^^<http://www.w3.org/2001/XMLSchema#boolean>. ");
+            sb.append("_:bnode1 <http://vivo.stonybrook.edu/local#hasWebID> ");
             sb.append("<");
             sb.append(webid);
-            sb.append("> ");
+            sb.append(">. ");
+            sb.append("_:bnode1 <http://vivo.stonybrook.edu/local#localHosted> \"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>. ");
+            sb.append("_:bnode1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#label> \"remote\".");
 
-            sb.append(" . ");
             sb.append("}");
             sb.append("}");
 
             System.out.println(sb.toString());
-            UpdateAction.parseExecute(sb.toString(), graphStore);
+            UpdateAction.parseExecute(sb.toString(), ontModel);
 
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -150,8 +166,10 @@ public class WebidHelper {
         // UserAccount currentUser = LoginStatusBean.getCurrentUser(vreq);
 
         try {
-            Dataset dataset = vreq.getDataset();
-            GraphStore graphStore = GraphStoreFactory.create(dataset);
+            //Dataset dataset = vreq.getDataset();
+            //GraphStore graphStore = GraphStoreFactory.create(dataset);
+            
+            OntModel ontModel = getOntModel(request);
 
             RSAPublicKey certpublickey = (RSAPublicKey) cert.getPublicKey();
             String modulus = String.format("%0288x", certpublickey.getModulus());
@@ -159,30 +177,41 @@ public class WebidHelper {
 
             StringBuffer sb = new StringBuffer();
 
-            sb.append("INSERT DATA ");
-            sb.append("{ GRAPH <http://vitro.mannlib.cornell.edu/default/vitro-kb-2> ");
-            sb.append("{ ");
-            // THE KEY (BLANK NODE)
+            sb.append("INSERT DATA \n");
+            //sb.append("{ GRAPH <http://vitro.mannlib.cornell.edu/default/vitro-kb-2> \n");
+            sb.append("{ \n");
+
+            // WEBID ASSOCIATION
             sb.append("<");
             sb.append(request.getParameter("webid"));
             sb.append("> ");
-            sb.append(" <http://www.w3.org/ns/auth/cert#key> _:bnode . ");
-            // PUBLIC KEY
-            sb.append("_:bnode <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/auth/cert#RSAPublicKey> . ");
+            sb.append("<http://vivo.stonybrook.edu/local#hasWebIDAssociation> _:bnode. \n");
+            sb.append("_:bnode <http://vivo.stonybrook.edu/local#me> \"true\"^^<http://www.w3.org/2001/XMLSchema#boolean>. \n");
+            sb.append("_:bnode <http://vivo.stonybrook.edu/local#hasWebID> ");
+            sb.append("<");
+            sb.append(request.getParameter("webid"));
+            sb.append("> . \n");
+            sb.append("_:bnode <http://vivo.stonybrook.edu/local#localHosted> \"true\"^^<http://www.w3.org/2001/XMLSchema#boolean> . \n");
+            sb.append("_:bnode <http://www.w3.org/ns/auth/cert#key> _:thiskeysbnode . \n");
+            sb.append("_:bnode <http://www.w3.org/1999/02/22-rdf-syntax-ns#label> \"home\" . \n");
+
+            // KEY 
+            sb.append("_:thiskeysbnode <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <#RSAPublicKey> . \n"); //<http://www.w3.org/ns/auth/cert#RSAPublicKey>
+            sb.append("_:thiskeysbnode <http://www.w3.org/1999/02/22-rdf-syntax-ns#label> \"pretend\" . \n");
             // MODULUS
-            sb.append("_:bnode <http://www.w3.org/ns/auth/cert#modulus> ");
+            sb.append("_:thiskeysbnode <http://www.w3.org/ns/auth/cert#modulus> ");
             sb.append("\"");
             sb.append(modulus);
-            sb.append("\"^^<http://www.w3.org/2001/XMLSchema#hexBinary> . ");
+            sb.append("\"^^<http://www.w3.org/2001/XMLSchema#hexBinary> . \n");
             // EXPONENT
-            sb.append("_:bnode <http://www.w3.org/ns/auth/cert#exponent> ");
+            sb.append("_:thiskeysbnode <http://www.w3.org/ns/auth/cert#exponent> ");
             sb.append(exponent);
-            sb.append(" . ");
-            sb.append("}");
+            sb.append(" . \n");
+            //sb.append("}");
             sb.append("}");
 
             System.out.println(sb.toString());
-            UpdateAction.parseExecute(sb.toString(), graphStore);
+            UpdateAction.parseExecute(sb.toString(), ontModel);
 
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -190,23 +219,27 @@ public class WebidHelper {
     }
 
     /**
-     * You're logging in with WebID. I need your ID so I can find your
-     * UserAccount and log you in.
+     * User is logging in with WebID. Fetch info so I can log person in.
      *
      * @param request
      * @param webid
      * @return
      */
-    public String getNetworkIdForLogin(HttpServletRequest request, String webid) {
+    public String[] getIdsForLogin(HttpServletRequest request, String webid) {
 
-        String id = "";
+        String[] id = {"", ""};
 
         StringBuffer queryString = new StringBuffer();
-        queryString.append("SELECT ?id WHERE { <");
+
+        queryString.append("SELECT ?s ?id WHERE { ?s <http://vivo.stonybrook.edu/ns#networkId> ?id ; \n");
+        queryString.append("<http://vivo.stonybrook.edu/local#hasWebIDAssociation> ?bnode . \n");
+        queryString.append("?bnode <http://vivo.stonybrook.edu/local#hasWebID> \n");
+
+        queryString.append("<");
         queryString.append(webid);
-        queryString.append("> <http://www.w3.org/2002/07/owl#sameAs> ?b . ");
-        queryString.append("?b <http://vivo.stonybrook.edu/ns#networkId> ?id . }"); // WEBID == PERSON URI (INTERNAL).
-        System.out.println("getNetworkIdForLogin(): " + queryString);
+        queryString.append("> . }\n");
+
+        System.out.println("getIdsForLogin(): " + queryString);
 
         com.hp.hpl.jena.query.Query query = QueryFactory.create(queryString.toString());
 
@@ -217,11 +250,16 @@ public class WebidHelper {
         for (; results.hasNext();) {
             QuerySolution qsoln = results.nextSolution();
 
-            Literal really = qsoln.getLiteral("id");
-            id = really.getString();
+            Resource r = qsoln.getResource("s");
+            id[0] = (String) r.getURI();
+
+            Literal l = qsoln.getLiteral("id");
+            id[1] = (String) l.getString();
+
         }
         qe.close();
-        System.out.println("id: " + id);
+        System.out.println("subj: " + id[0]);
+        System.out.println("id: " + id[1]);
 
         return id;
 
@@ -232,14 +270,22 @@ public class WebidHelper {
      * @param request
      * @return
      */
-    public ArrayList getWebIds(HttpServletRequest request) {
+    public ArrayList<WebIDAssociation> getWebIdList(HttpServletRequest request) {
         StringBuffer sb = new StringBuffer();
 
         StringBuffer queryString = new StringBuffer();
-        queryString.append("SELECT ?webid WHERE { ");
+        queryString.append("SELECT ?hasWebIDAssociation ?me ?hasWebID ?localHosted ?label \n");
+        //queryString.append("FROM NAMED <http://vitro.mannlib.cornell.edu/default/vitro-kb-2> \n");
+        queryString.append("WHERE { \n");
         queryString.append("<");
         queryString.append(getProfileUri(request));
-        queryString.append(">  <http://www.w3.org/2002/07/owl#sameAs> ?webid . }");
+        queryString.append(">  <http://vivo.stonybrook.edu/local#hasWebIDAssociation> ?bnode . \n");
+        queryString.append("?bnode <http://vivo.stonybrook.edu/local#me> ?me ; \n");
+        queryString.append("<http://vivo.stonybrook.edu/local#hasWebID> ?hasWebID ; \n");
+        queryString.append("<http://vivo.stonybrook.edu/local#localHosted> ?localHosted ; \n");
+        queryString.append("<http://www.w3.org/1999/02/22-rdf-syntax-ns#label> ?label . \n");
+        queryString.append("}\n");
+
         System.out.println("listWebids: " + queryString);
 
         com.hp.hpl.jena.query.Query query = QueryFactory.create(queryString.toString());
@@ -248,17 +294,12 @@ public class WebidHelper {
 
         QueryExecution qe = QueryExecutionFactory.create(query, ontModel);
 
-        ArrayList webidList = new ArrayList();
+        ArrayList<WebIDAssociation> webidList = new ArrayList();
         ResultSet results = qe.execSelect();
 
         for (; results.hasNext();) {
-            QuerySolution qsoln = results.nextSolution();
-
-            //Literal l = qsoln.getLiteral("webid");
-            //webidList.add((String) l.getString());
-
-            Resource r = qsoln.getResource("webid");
-            webidList.add((String) r.getURI());
+            QuerySolution q = results.nextSolution();
+            webidList.add(new WebIDAssociation(q.getLiteral("me").getBoolean(), q.getResource("webid").getURI(), q.getLiteral("localHosted").getBoolean(), q.getLiteral("label").getString()));
 
             // TODO: ADD ROLE.
             //out.println("<tr><td>" + really.getString() + "</td><td>Self-Edit</td></tr>");

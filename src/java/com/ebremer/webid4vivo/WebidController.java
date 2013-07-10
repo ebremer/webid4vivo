@@ -1,8 +1,6 @@
 package com.ebremer.webid4vivo;
 
 import edu.cornell.mannlib.vitro.webapp.beans.UserAccount;
-import edu.cornell.mannlib.vitro.webapp.controller.authenticate.Authenticator;
-import edu.cornell.mannlib.vedit.beans.LoginStatusBean;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -12,7 +10,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -23,9 +20,12 @@ import javax.servlet.http.HttpServlet;
  */
 public class WebidController extends HttpServlet {
 
-    private static final String WHO = "who you are";
-    private static final String WHAT = "what you want";
-    private static final String CERT = "your certificate";
+    private static final int NO_CERT = 1;
+    private static final int INVALID = 2;
+    private static final int ACCOUNT = 3;
+    private static final int LOGIN_FAIL = 4;
+    private static final int NOT_ASSOCIATED = 5;
+    private static final int WHAT = 6;
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -63,39 +63,7 @@ public class WebidController extends HttpServlet {
      */
     protected void attemptLogin(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
-        String webidAuthID = whoAreYou(request);
-
-        if (webidAuthID == null) {
-            // No cert found or selected.
-            this.fail(response, CERT);
-        } else {
-
-            UserAccount userAccount = new WebidHelper().getUserAccount(request, webidAuthID);
-
-            if (userAccount != null) {
-                // User account found.
-                // Log user in.
-                // Send success message.
-                logYouIn(userAccount, request);
-                success(response);
-            } else {
-                // User account not found.
-                fail(response, WHO);
-            }
-
-        }
-
-    }
-
-    /**
-     * Who is this person?
-     *
-     * @param request
-     * @param out
-     * @return
-     */
-    protected String whoAreYou(HttpServletRequest request) {
-
+        int message = 0;
         X509Certificate[] certs = null;
         X509Certificate cert = null;
         webid wid = null;
@@ -103,62 +71,58 @@ public class WebidController extends HttpServlet {
         try {
             certs = (X509Certificate[]) request.getAttribute("javax.servlet.request.X509Certificate");
         } catch (Exception ex) {
-            System.out.println("Could not get X509Certificate: " + ex.toString());
+            message = NO_CERT;
         }
 
-        if (certs == null) {
-            System.out.println("No certs detected.");
-            return null;
-        } else {
+        if (certs != null) {
             cert = certs[0];
             wid = new webid(cert);
 
             boolean verified = wid.verified();
 
-            System.out.println(new Date() + " VERIFIED WEBID");
-            System.out.println(wid.getSparqlQuery());
-
             if (verified) {
-                // Get network id to get handle to user account.
-                return new WebidHelper().getNetworkIdForLogin(request, wid.getURI());
-                // Find user acct associated with this webid.
-                //return new WebidHelper().getEmail(request, wid.getURI());                
-            } else {
-                System.out.println("QueryExecution execAsk() returned false.  Cert not verified.");
-                return null;
+                WebidHelper x = new WebidHelper();
 
+                // Get network id to get handle to user account.
+                String[] keys = x.getIdsForLogin(request, wid.getURI());
+
+                if (keys[0].isEmpty()) {
+                    message = NOT_ASSOCIATED;
+                } else {
+                    UserAccount userAccount = x.getUserAccount(request, keys[1]);
+
+                    if (userAccount != null) {
+                        try {
+                            // User account found.
+                            // Log user in.
+                            x.recordLogin(request, userAccount);
+
+                        } catch (Exception ex) {
+                            System.out.println("Login failed. " + ex.toString());
+                            message = LOGIN_FAIL;
+                        }
+                    } else {
+                        // User account not found.
+                        message = ACCOUNT;
+                    }
+
+                }
+
+
+            } else {
+                // Not a valid cert. I don't know you!
+                message = INVALID;
             }
 
         }
 
-    }
-
-    /**
-     * Log you in. Get your account, and record your login.
-     *
-     * @param you
-     * @param request
-     */
-    protected void logYouIn(UserAccount userAccount, HttpServletRequest request) {
-
-        try {
-            getAuthenticator(request).recordLoginAgainstUserAccount(userAccount, LoginStatusBean.AuthenticationSource.EXTERNAL);
-
-        } catch (Exception ex) {
-            System.out.println("Tried to record login against user account, but couldn't.");
-            System.out.println(ex.toString());
+        if (message > 0) {
+            fail(response, message);
+        } else {
+            // Successful login.
+            response.sendRedirect("https://vivo.stonybrook.edu/");
         }
 
-    }
-
-    /**
-     * Successful login.
-     *
-     * @param response
-     * @throws IOException
-     */
-    protected void success(HttpServletResponse response) throws IOException {
-        response.sendRedirect("https://vivo.stonybrook.edu/");
     }
 
     /**
@@ -168,7 +132,7 @@ public class WebidController extends HttpServlet {
      * @param idk
      * @throws IOException
      */
-    protected void fail(HttpServletResponse response, String idk) throws IOException {
+    protected void fail(HttpServletResponse response, int msg) throws IOException {
         response.setContentType("text/html;charset=UTF-8");
         PrintWriter out = null;
         try {
@@ -182,20 +146,32 @@ public class WebidController extends HttpServlet {
 
             out.println("<body>");
 
-            if (idk.equalsIgnoreCase(WHO)) {
-                out.println("<p>");
-                out.println("The WebID you selected is not associated with your profile.<br>");
-                out.println("Please <a href=\"/\">sign in</a> to your account, and then Add a WebID to your profile.");
-                out.println("</p>");
-            } else if (idk.equalsIgnoreCase(CERT)) {
-                out.println("<p>");
-                out.println("I'm expecting a certificate, but couldn't find one in your browser.<br>");
-                out.println("You can <a href=\"/\">sign in</a> to your account, and then Create a WebID to attach to your profile.");
-                out.println("</p>");
-            } else {
-                out.println("<p>I don't know " + idk + ".</p>");
-                out.println("<br><a href=\"/\">Click here to go to VIVO</a><br>");
+            out.println("<p>");
+            switch (msg) {
+                case NO_CERT:
+                    out.println("I did not get your certificate.<br>");
+                    out.println("Please <B>clear your cache</B> and try again.");
+                    break;
+                case INVALID:
+                    out.println("Invalid certificate.");
+                    break;
+                case ACCOUNT:
+                    out.println("User account not found.");
+                    break;
+                case LOGIN_FAIL:
+                    out.println("Login failed.");
+                    break;
+                case NOT_ASSOCIATED:
+                    out.println("The WebID you selected is not associated with any VIVO profile.<br>");
+                    out.println("Please <a href=\"/\">click here</a>, sign in, and associate it.  Thanks!");
+                    break;
+                case WHAT:
+                    // Basically, I don't know what you want.  You passed me a bad parameter.
+                    out.println("Page not found.<br>");
+                    out.println("Please <b><a href=\"/\">click here</a></b>.");
+                    break;
             }
+            out.println("</p>");
 
             out.println("</body>");
             out.println("</html>");
@@ -227,7 +203,7 @@ public class WebidController extends HttpServlet {
 
             boolean found = true;
             try {
-                webidList = x.getWebIds(request);
+                webidList = x.getWebIdList(request);
                 if (webidList.isEmpty()) {
                     System.out.println("webidList - isEmpty");
                     found = false;
@@ -237,21 +213,29 @@ public class WebidController extends HttpServlet {
                 found = false;
             }
 
+            out.println("<h3>Manage your WebID's!</h3>");
             if (!found) {
-                out.println("You have no WebID's associated with your profile.<br>");
+                // Question: So how did you get in, in the first place?  Answer: Logged in with NetID.
                 out.println("Click <a href=\"gollum?3\" target=\"addwin\">Add</a> to associate an existing external WebID.<br>");
                 out.println("Or click <a href=\"ebexp\" target=\"ebexpwin\">Create</a> to create a new WebID.");
             } else {
                 out.println("<table border=\"0\" width=\"60%\">");
                 out.println("<tr><td><a href=\"gollum?3\" target=\"addwin\">Add</a></td>");
+                out.println("<td>&nbsp;</td><td>&nbsp;</td>");
                 out.println("<td><a href=\"ebexp\" target=\"ebexpwin\">Create</a></td></tr>");
                 out.println("<tr><td colspan=\"2\"><b><u>Webids currently associated with your profile:</u></b></td></tr>");
-                //out.println("<tr><td><b>WebID</b></td><td><b>Role</b></td></tr>");
-                out.println("<tr><td colspan=\"2\"><b>WebID</b></td></tr>");
+                out.println("<tr><td><b>WebID</b></td><td><b>Label</b></td><td><b>Me</b></td><td><b>Local-Hosted</b></td></tr>");
+                //out.println("<tr><td colspan=\"2\"><b>WebID</b></td></tr>");
 
                 Iterator it = webidList.iterator();
                 while (it.hasNext()) {
-                    out.println("<tr><td colspan=\"2\">" + it.next() + "</td></tr>");
+                    WebIDAssociation bean = (WebIDAssociation) it.next();
+                    out.println("<tr>");
+                    out.println("<tr><td>" + bean.getWebId() + "</td></tr>");
+                    out.println("<tr><td>" + bean.getLabel() + "</td></tr>");
+                    out.println("<tr><td>" + bean.isMe() + "</td></tr>");
+                    out.println("<tr><td>" + bean.isLocalHosted() + "</td></tr>");
+                    out.println("</tr>");
                 }
                 out.println("</table>");
 
@@ -327,15 +311,6 @@ public class WebidController extends HttpServlet {
             out.close();
         }
 
-    }
-
-    /**
-     *
-     * @param request
-     * @return
-     */
-    private Authenticator getAuthenticator(HttpServletRequest request) {
-        return Authenticator.getInstance(request);
     }
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">

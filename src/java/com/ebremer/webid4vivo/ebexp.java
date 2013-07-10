@@ -188,7 +188,7 @@ public class ebexp extends HttpServlet {
         // Default from current time minus one hour to deal with incorrect clocks.
         // To date is from plus number of days valid.
         Date notBefore = new Date(System.currentTimeMillis() - (long) (60 * 60 * 1000));
-        Date notAfter = new Date(notBefore.getTime() + (long) (25.9 * 24 * 60 * 60 * 1000));
+        Date notAfter = new Date(notBefore.getTime() + (long) (iDays * 24 * 60 * 60 * 1000));
 
         // Build initial certificate
         X500NameBuilder nb = new X500NameBuilder();
@@ -255,6 +255,7 @@ public class ebexp extends HttpServlet {
             Logger.getLogger(ebexp.class.getName()).log(Level.SEVERE, null, ex);
         }
         is1.close();
+        
         response.setContentType("application/x-x509-user-cert");
         ServletOutputStream out = response.getOutputStream();
         
@@ -268,6 +269,9 @@ public class ebexp extends HttpServlet {
             pemWriter.writeObject(theCert);
             pemWriter.close();
             byte[] ser = sw.toString().getBytes("UTF-8");
+            System.out.println("START WHAT.");
+            System.out.println(ser);
+            System.out.println("END WHAT.");
             out.write(ser);
 
         } finally {

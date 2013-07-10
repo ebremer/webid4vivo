@@ -65,6 +65,8 @@ public class tdexp extends HttpServlet {
         this.vreq = new VitroRequest(request);
         this.ontModel = this.vreq.getJenaOntModel();
 
+        addIt();
+        
         response.setContentType("text/html;charset=UTF-8");
         PrintWriter out = response.getWriter();
         out.println("<!DOCTYPE html>");
@@ -74,16 +76,79 @@ public class tdexp extends HttpServlet {
         out.println("</head>");
         out.println("<body>");
         out.println("<h1>Servlet tdexp</h1>");
-
-        arqUpdate1();
-        //readAndWrite(request, response, out);
         
-        //out.println(getUserAccount(request, ""));
+        out.println(getIt());
 
         out.println("</body>");
         out.println("</html>");
         out.close();
 
+    }
+
+    protected void addIt() {
+
+        try {
+            Dataset dataset = vreq.getDataset();
+            GraphStore graphStore = GraphStoreFactory.create(dataset);
+
+            StringBuffer sb = new StringBuffer();
+
+            sb.append("INSERT DATA \n");
+            sb.append("{ GRAPH <http://vitro.mannlib.cornell.edu/default/vitro-kb-2> \n");
+            sb.append("{ \n");
+
+            sb.append("<https://bob.example/profile#me> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Person> . \n");
+            sb.append("<https://bob.example/profile#me> <http://xmlns.com/foaf/0.1/name> \"Bob\" . \n");
+            sb.append("<https://bob.example/profile#me> <http://www.w3.org/ns/auth/cert#key> _:b0 .\n");
+            sb.append("_:b0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/auth/cert#RSAPublicKey> .\n");
+            sb.append("_:b0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#label> \"made on 23 November 2011 on my laptop\" . \n");
+            sb.append("_:b0 <http://www.w3.org/ns/auth/cert#modulus> \"00cb24ed85d64d794b69c701c186acc059501e856000f661c93204d8380e07191c5c8b368d2ac32a428acb970398664368dc2a867320220f755e99ca2eecdae62e8d15fb58e1b76ae59cb7ace8838394d59e7250b449176e51a494951a1c366c6217d8768d682dde78dd4d55e613f8839cf275d4c8403743e7862601f3c49a6366e12bb8f498262c3c77de19bce40b32f89ae62c3780f5b6275be337e2b3153ae2ba72a9975ae71ab724649497066b660fcf774b7543d980952d2e8586200eda4158b014e75465d91ecf93efc7ac170c11fc7246fc6ded79c37780000ac4e079f671fd4f207ad770809e0e2d7b0ef5493befe73544d8e1be3dddb52455c61391a1\"^^<http://www.w3.org/2001/XMLSchema#hexBinary> .\n");
+            sb.append("_:b0 <http://www.w3.org/ns/auth/cert#exponent> \"65537\"^^<http://www.w3.org/2001/XMLSchema#integer> .\n");
+
+            sb.append("} \n");
+            sb.append("} \n");
+
+            System.out.println(sb.toString());
+            //UpdateAction.parseExecute(sb.toString(), this.ontModel);
+            UpdateAction.parseExecute(sb.toString(), graphStore);
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    protected String getIt() {
+        String str = "";
+        try {
+
+            StringBuffer queryString = new StringBuffer();
+
+            queryString.append("SELECT * \n");
+            queryString.append("{ \n");
+            queryString.append("<https://bob.example/profile#me> <http://www.w3.org/ns/auth/cert#key> ?o . \n");
+            queryString.append("?o <http://www.w3.org/1999/02/22-rdf-syntax-ns#label> ?oo . \n");
+            queryString.append("} \n");
+
+            System.out.println("getIt(): " + queryString);
+
+            com.hp.hpl.jena.query.Query query = QueryFactory.create(queryString.toString());
+
+            QueryExecution qe = QueryExecutionFactory.create(query, this.ontModel);
+
+            ResultSet results = qe.execSelect();
+            for (; results.hasNext();) {
+                QuerySolution qsoln = results.nextSolution();
+
+                Literal l = qsoln.getLiteral("oo");
+                str = (String) l.getString();
+                System.out.println((String) l.getString());
+
+            }
+            qe.close();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return str;
     }
 
     protected void arqUpdate1() {
@@ -96,7 +161,7 @@ public class tdexp extends HttpServlet {
             sb.append("INSERT DATA ");
             sb.append("{ GRAPH <http://vitro.mannlib.cornell.edu/default/vitro-kb-2> ");
             sb.append("{ ");
-            
+
             // PUBLIC KEY
             sb.append("_:bnode <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/auth/cert#RSAPublicKey>. ");
             // MODULUS
@@ -108,7 +173,7 @@ public class tdexp extends HttpServlet {
             sb.append("_:bnode <http://www.w3.org/ns/auth/cert#exponent> \"65537\"^^<http://www.w3.org/2001/XMLSchema#integer>. ");
             // THE KEY (BLANK NODE)
             sb.append("<http://vivo.stonybrook.edu/individual/n1431> <http://www.w3.org/ns/auth/cert#key> _:bnode. ");
-            
+
             sb.append("}");
             sb.append("}");
 
@@ -135,25 +200,24 @@ public class tdexp extends HttpServlet {
 
     }
 
-    
     /**
      * Testing.
+     *
      * @param request
-     * @return 
+     * @return
      */
-    protected UserAccount getUserAccount(HttpServletRequest request, String somebody)
-    {
+    protected UserAccount getUserAccount(HttpServletRequest request, String somebody) {
         return Authenticator.getInstance(request).getAccountForExternalAuth(somebody);
     }
-    
+
     /**
      * Prove that we can read from, and write to, the database.
+     *
      * @param request
      * @param response
-     * @param out 
+     * @param out
      */
-    protected void readAndWrite(HttpServletRequest request, HttpServletResponse response, PrintWriter out)
-    {
+    protected void readAndWrite(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
         String uri = ERICH;
         String uri1 = TAMMY;
         String name = "";
@@ -184,7 +248,7 @@ public class tdexp extends HttpServlet {
 
         // One of these methods gotta work!
         testInsertMethods(request, response, out);
-        
+
         try {
             // Ask again to see if a record was entered
             // TODO: THIS RETURNS FALSE. WHY?
@@ -195,22 +259,22 @@ public class tdexp extends HttpServlet {
             out.println("</p>");
         } catch (Exception g) {
             System.out.println("g: " + g.toString());
-        }        
-        
-        
+        }
+
+
     }
 
     /**
      * Test methods of insertion, figure out what works.
+     *
      * @param request
      * @param response
-     * @param out 
+     * @param out
      */
-    protected void testInsertMethods(HttpServletRequest request, HttpServletResponse response, PrintWriter out)
-    {
+    protected void testInsertMethods(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
         String uri = ERICH;
         String uri1 = TAMMY;
-        
+
         // Insert
         out.println("<p>");
         //out.println("Inserting foaf:knows triples for Erich & Tammy<br>");
@@ -253,8 +317,7 @@ public class tdexp extends HttpServlet {
     }
 
     /**
-     * DELTA WORKED.
-     * ARQ - SPARQL Update.
+     * DELTA WORKED. ARQ - SPARQL Update.
      * http://jena.apache.org/documentation/query/update.html
      */
     protected void arqUpdate() {
@@ -333,39 +396,39 @@ public class tdexp extends HttpServlet {
     }
 
     /**
-     * Insert "tammy foaf:knows erich".
-     * WORKS.
-     * @param request 
+     * Insert "tammy foaf:knows erich". WORKS.
+     *
+     * @param request
      */
     protected void m_insert(HttpServletRequest request) {
-        
+
         System.out.println("Insert a record...");
-        
-        
+
+
         try {
 
             // SO FAR WE HAVE ERICH FOAF:KNOWS TAMMY.
             // LET'S PUT TAMMY FOAF:KNOWS ERICH.
-            
+
             // Using this model:
             OntModelSelector ontModelSelector = ModelContext.getOntModelSelector(getServletContext());
             OntModel model = ontModelSelector.getABoxModel();
-            
+
             Resource erich = model.getResource("http://vivo.stonybrook.edu/individual/n1559");
             Resource tammy = model.getResource("http://vivo.stonybrook.edu/individual/n1431");
 
             // Create properties for the different types of relationships to represent
-            Property hasCert = model.createProperty("http://www.w3.org/ns/auth/cert#","X509Certificate");
+            Property hasCert = model.createProperty("http://www.w3.org/ns/auth/cert#", "X509Certificate");
 
             // Create a Resource for each thing, identified by their URI
             Resource certResource = model.createResource("http://yabbadabbadoo1/foaf.me");
-            
+
             // Create statements
             //Statement statement = model.createStatement(tammy,FOAF.knows,erich);
-            Statement statement = model.createStatement(tammy,hasCert,certResource);
+            Statement statement = model.createStatement(tammy, hasCert, certResource);
 
             // add the created statement to the model
-            model.add(statement);            
+            model.add(statement);
 
         } catch (Exception idk) {
             System.out.println("m_insert(): " + idk.toString());
@@ -402,7 +465,6 @@ public class tdexp extends HttpServlet {
 
     }
 
-    
     /**
      * Insert Attempt #2.
      * http://pic.dhe.ibm.com/infocenter/db2luw/v10r1/topic/com.ibm.swg.im.dbclient.rdf.doc/doc/c0060617.html.
