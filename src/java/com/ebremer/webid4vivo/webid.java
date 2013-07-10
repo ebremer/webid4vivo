@@ -1,12 +1,10 @@
 package com.ebremer.webid4vivo;
 
 /**
- * 
+ *
  * @author Erich Bremer
  * @author Tammy DiPrima
  */
-
-
 import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QueryFactory;
@@ -20,94 +18,90 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-public class webid 
-{
+public class webid {
+
     private X509Certificate cert = null;
     private ArrayList<String> alts = new ArrayList();
     private String uri = null;
     private String modulus = null;
     private String exponent = null;
     private Model model = null;
-    
-    webid (X509Certificate cert) 
-    {
+
+    webid(X509Certificate cert) {
         this.cert = cert;
-        RSAPublicKey certpublickey = (RSAPublicKey) cert.getPublicKey();        
+        RSAPublicKey certpublickey = (RSAPublicKey) cert.getPublicKey();
         modulus = String.format("%0288x", certpublickey.getModulus());
         exponent = String.valueOf(certpublickey.getPublicExponent());
-        
+
         Collection altnames = null;
-        try 
-        {
+        try {
             altnames = cert.getSubjectAlternativeNames();
-        } 
-        catch (CertificateParsingException ex) 
-        {
+        } catch (CertificateParsingException ex) {
             System.out.println(ex.toString());
         }
-        
-        Iterator itAltNames  = altnames.iterator();
-        while(itAltNames.hasNext())
-        {
-            List extensionEntry = (List)itAltNames.next();
+
+        Iterator itAltNames = altnames.iterator();
+        while (itAltNames.hasNext()) {
+            List extensionEntry = (List) itAltNames.next();
             Integer nameType = (Integer) extensionEntry.get(0);
-            if (nameType.intValue()==6) 
-            {
+            if (nameType.intValue() == 6) {
                 String aname = (String) extensionEntry.get(1);
                 alts.add(aname);
             }
         }
-        
-        if (alts.size() == 1) 
-        {
+
+        if (alts.size() == 1) {
             uri = (String) alts.get(0);
         }
     }
-    
-    public String getSparqlQuery()
-    {
-        String sp = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ";
-        sp = sp.concat("PREFIX : <http://www.w3.org/ns/auth/cert#> ");
-        sp = sp.concat("PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> ");
-        //sp = sp.concat("ASK {?webid :key [ :modulus ?mod; :exponent ?exp; ] .}");
-        sp = sp.concat("ASK {<" + uri + "> :key [ :modulus \"" + modulus + "\"^^xsd:hexBinary; :exponent " + exponent + "; ] .}");
-        System.out.println("SPARQL : " + sp);
-        return sp;
+
+    public String getSparqlQuery() {
+        // ASK {?webid :key [ :modulus ?mod; :exponent ?exp; ] .}
+
+        StringBuffer sp = new StringBuffer();
+
+        sp.append("PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ");
+        sp.append("PREFIX : <http://www.w3.org/ns/auth/cert#> ");
+        sp.append("PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> ");
+        sp.append("ASK {<");
+        sp.append(uri);
+        sp.append("> ");
+        sp.append(":key [ :modulus \"");
+        sp.append(modulus);
+        sp.append("\"^^xsd:hexBinary;");
+        sp.append(":exponent ");
+        sp.append(exponent);
+        sp.append("; ] .}");
+
+
+
+        return sp.toString();
+
     }
 
-        
-
-    
-    public boolean verified() 
-    {
+    public boolean verified() {
         model = ModelFactory.createDefaultModel();
         model.read(uri, "RDF/XML");
-        
+
         com.hp.hpl.jena.query.Query query = QueryFactory.create(getSparqlQuery());
-        
+
         QueryExecution qe = QueryExecutionFactory.create(query, model);
-        if (qe.execAsk()) 
-        {
+        if (qe.execAsk()) {
             return true;
-        } 
-        else 
-        {
+        } else {
             return false;
         }
     }
 
-    public X509Certificate getCert() 
-    {
+    public X509Certificate getCert() {
         return cert;
     }
-    
-    public Model getFOAF() 
-    {
+
+    public Model getFOAF() {
         return model;
     }
-    
-    public String getURI() 
-    {
+
+    public String getURI() {
         return uri;
     }
 }
