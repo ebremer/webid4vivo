@@ -31,6 +31,7 @@ import edu.cornell.mannlib.vitro.webapp.dao.jena.OntModelSelector;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.String;
+import java.util.Iterator;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -89,8 +90,14 @@ public class tdexp extends HttpServlet {
 
         try {
             Dataset dataset = vreq.getDataset();
-            GraphStore graphStore = GraphStoreFactory.create(dataset);
+            Iterator i = dataset.listNames();
+            System.out.println("The Dataset contains the following graphs...");
 
+            while (i.hasNext()) {
+                System.out.println((String) i.next());
+            }
+            GraphStore graphStore = GraphStoreFactory.create(dataset);
+            System.out.println("before : "+graphStore.size());
             StringBuffer sb = new StringBuffer();
 
             sb.append("INSERT DATA \n");
@@ -98,12 +105,12 @@ public class tdexp extends HttpServlet {
             sb.append("{ \n");
 
             sb.append("<https://bob.example/profile#me> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Person> . \n");
-            sb.append("<https://bob.example/profile#me> <http://xmlns.com/foaf/0.1/name> \"Bob\" . \n");
             sb.append("<https://bob.example/profile#me> <http://www.w3.org/ns/auth/cert#key> _:b0 .\n");
             sb.append("_:b0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/auth/cert#RSAPublicKey> .\n");
             sb.append("_:b0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#label> \"made on 23 November 2011 on my laptop\" . \n");
             sb.append("_:b0 <http://www.w3.org/ns/auth/cert#modulus> \"00cb24ed85d64d794b69c701c186acc059501e856000f661c93204d8380e07191c5c8b368d2ac32a428acb970398664368dc2a867320220f755e99ca2eecdae62e8d15fb58e1b76ae59cb7ace8838394d59e7250b449176e51a494951a1c366c6217d8768d682dde78dd4d55e613f8839cf275d4c8403743e7862601f3c49a6366e12bb8f498262c3c77de19bce40b32f89ae62c3780f5b6275be337e2b3153ae2ba72a9975ae71ab724649497066b660fcf774b7543d980952d2e8586200eda4158b014e75465d91ecf93efc7ac170c11fc7246fc6ded79c37780000ac4e079f671fd4f207ad770809e0e2d7b0ef5493befe73544d8e1be3dddb52455c61391a1\"^^<http://www.w3.org/2001/XMLSchema#hexBinary> .\n");
             sb.append("_:b0 <http://www.w3.org/ns/auth/cert#exponent> \"65537\"^^<http://www.w3.org/2001/XMLSchema#integer> .\n");
+            sb.append("<https://bob.example/profile#me> <http://xmlns.com/foaf/0.1/name> \"Bob\" . \n");
 
             sb.append("} \n");
             sb.append("} \n");
@@ -111,6 +118,7 @@ public class tdexp extends HttpServlet {
             System.out.println(sb.toString());
             //UpdateAction.parseExecute(sb.toString(), this.ontModel);
             UpdateAction.parseExecute(sb.toString(), graphStore);
+            System.out.println("after : "+graphStore.size());
 
         } catch (Exception ex) {
             ex.printStackTrace();
