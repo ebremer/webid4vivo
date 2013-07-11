@@ -161,12 +161,15 @@ public class tdexp extends HttpServlet {
      */
     protected void getIt1(PrintWriter out) {
 
-        //VitroRequest vreq = new VitroRequest(request);
+        
+        
         Dataset dataset = vreq.getDataset();
+        
+        // SparqlQueryServlet does this - 
+        Model model = vreq.getJenaOntModel();
 
-
-        Model model = dataset.getNamedModel("http://vitro.mannlib.cornell.edu/default/vitro-kb-2");
-        //System.out.println(model.size());
+        // We put the data in like this; surely I should be able to get it out the same way -- 
+        //Model model = dataset.getNamedModel("http://vitro.mannlib.cornell.edu/default/vitro-kb-2");
 
         String queryString = "SELECT ?label \n"
                 + "WHERE { \n"
@@ -174,7 +177,7 @@ public class tdexp extends HttpServlet {
                 + "?bnode <http://www.w3.org/1999/02/22-rdf-syntax-ns#label> ?label . \n"
                 + "}";
         System.out.println(queryString);
-        out.println(queryString);
+        out.println("<pre>" + queryString + "</pre>");
 
         Query query = QueryFactory.create(queryString);
         QueryExecution qexec = QueryExecutionFactory.create(query, model);
