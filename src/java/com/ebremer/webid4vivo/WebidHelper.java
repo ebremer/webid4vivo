@@ -298,7 +298,7 @@ public class WebidHelper {
 
         StringBuffer queryString = new StringBuffer();
         queryString.append("SELECT ?hasWebIDAssociation ?me ?hasWebID ?localHosted ?label \n");
-        //queryString.append("FROM NAMED <http://vitro.mannlib.cornell.edu/default/vitro-kb-2> \n");
+        queryString.append("FROM NAMED <http://vitro.mannlib.cornell.edu/default/vitro-kb-2> \n");
         queryString.append("WHERE { \n");
         queryString.append("<");
         queryString.append(getProfileUri(request));
