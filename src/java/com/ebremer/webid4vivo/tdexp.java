@@ -5,9 +5,9 @@
  */
 package com.ebremer.webid4vivo;
 
-import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.query.Dataset;
+import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QueryFactory;
@@ -70,8 +70,8 @@ public class tdexp extends HttpServlet {
         this.vreq = new VitroRequest(request);
         this.ontModel = this.vreq.getJenaOntModel();
 
-        addIt();
-        
+        //addIt();
+
         response.setContentType("text/html;charset=UTF-8");
         PrintWriter out = response.getWriter();
         out.println("<!DOCTYPE html>");
@@ -81,8 +81,8 @@ public class tdexp extends HttpServlet {
         out.println("</head>");
         out.println("<body>");
         out.println("<h1>Servlet tdexp</h1>");
-        
-        out.println(getIt());
+
+        getIt1(out);
 
         out.println("</body>");
         out.println("</html>");
@@ -94,34 +94,34 @@ public class tdexp extends HttpServlet {
 
         try {
             Dataset dataset = vreq.getDataset();
-         
+
             //Model im = vreq.getJenaOntModel();
             Model im = ModelFactory.createDefaultModel();
             Iterator i = dataset.listNames();
             System.out.println("The Dataset contains the following graphs...");
             //OntModel mm = vreq.getJenaOntModel();
-           // System.out.println("before : "+mm.size());
+            // System.out.println("before : "+mm.size());
             while (i.hasNext()) {
                 System.out.println((String) i.next());
             }
             GraphStore graphStore = GraphStoreFactory.create(dataset);
-         /* Something bizzare going on with VIVO/Jena/SDB and blank nodes, circle back later.... -eb 
-         * StringBuffer sb = new StringBuffer();
-            sb.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#>\n");
-            sb.append("PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n");
-            sb.append("PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n");
-            sb.append("PREFIX rdfs: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n");
-            sb.append("INSERT DATA INTO <http://vitro.mannlib.cornell.edu/default/vitro-kb-2>\n");
-            sb.append("{ \n");
-            sb.append("<http://larry.example/profile#me> a foaf:Person;\n");
-            sb.append("foaf:name \"Larry\";\n");
-            sb.append("cert:key <http://larry.example/node1> .\n");
+            /* Something bizzare going on with VIVO/Jena/SDB and blank nodes, circle back later.... -eb 
+             * StringBuffer sb = new StringBuffer();
+             sb.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#>\n");
+             sb.append("PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n");
+             sb.append("PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n");
+             sb.append("PREFIX rdfs: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n");
+             sb.append("INSERT DATA INTO <" + NAMED_GRAPH + ">\n");
+             sb.append("{ \n");
+             sb.append("<http://larry.example/profile#me> a foaf:Person;\n");
+             sb.append("foaf:name \"Larry\";\n");
+             sb.append("cert:key <http://larry.example/node1> .\n");
 
-            sb.append("<http://larry.example/node1> a cert:RSAPublicKey;\n");
-            sb.append("rdfs:label \"tired and we want to go home\";\n");
-            sb.append("cert:exponent 65537 .\n");
-            sb.append("} \n");
-          */  
+             sb.append("<http://larry.example/node1> a cert:RSAPublicKey;\n");
+             sb.append("rdfs:label \"tired and we want to go home\";\n");
+             sb.append("cert:exponent 65537 .\n");
+             sb.append("} \n");
+             */
             StringBuffer sb = new StringBuffer();
             sb.append("@prefix cert: <http://www.w3.org/ns/auth/cert#> .\n");
             sb.append("@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n");
@@ -142,18 +142,57 @@ public class tdexp extends HttpServlet {
                 System.out.println(ex.toString());
             }
             System.out.println("importing...");
-            //im.read(is,"http://vitro.mannlib.cornell.edu/default/vitro-kb-2", "TTL");
-            im.read(is,null, "TTL");
-            im.write(System.out,"TTL");
+            //im.read(is,"" + NAMED_GRAPH + "", "TTL");
+            im.read(is, null, "TTL");
+            im.write(System.out, "TTL");
             System.out.println("adding triples to kb 2...");
-            Model e = dataset.getNamedModel("http://vitro.mannlib.cornell.edu/default/vitro-kb-2");
+            Model e = dataset.getNamedModel(NAMED_GRAPH);
             e.add(im);
             //UpdateAction.parseExecute(sb.toString(), this.ontModel);
-           // UpdateAction.parseExecute(sb.toString(), graphStore);
+            // UpdateAction.parseExecute(sb.toString(), graphStore);
 
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+    }
+
+    /**
+     * Get data from model.
+     */
+    protected void getIt1(PrintWriter out) {
+
+        //VitroRequest vreq = new VitroRequest(request);
+        Dataset dataset = vreq.getDataset();
+
+
+        Model model = dataset.getNamedModel("http://vitro.mannlib.cornell.edu/default/vitro-kb-2");
+        //System.out.println(model.size());
+
+        String queryString = "SELECT ?label \n"
+                + "WHERE { \n"
+                + "<http://vivo.stonybrook.edu/individual/n1431>  <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#hasWebIDAssociation> ?bnode . \n"
+                + "?bnode <http://www.w3.org/1999/02/22-rdf-syntax-ns#label> ?label . \n"
+                + "}";
+        System.out.println(queryString);
+        out.println(queryString);
+
+        Query query = QueryFactory.create(queryString);
+        QueryExecution qexec = QueryExecutionFactory.create(query, model);
+        try {
+            ResultSet results = qexec.execSelect();
+            for (; results.hasNext();) {
+                System.out.println("here");
+                QuerySolution soln = results.nextSolution();
+                //RDFNode x = soln.get("label") ;       // Get a result variable by name.
+                //Resource r = soln.getResource("VarR") ; // Get a result variable - must be a resource
+                Literal l = soln.getLiteral("label");   // Get a result variable - must be a literal
+                System.out.println(l.getString());
+                out.println(l.getString());
+            }
+        } finally {
+            qexec.close();
+        }
+
     }
 
     protected String getIt() {
@@ -162,7 +201,7 @@ public class tdexp extends HttpServlet {
 
             StringBuffer queryString = new StringBuffer();
 
-queryString.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#>\n");
+            queryString.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#>\n");
             queryString.append("PREFIX rdfs: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n");
             queryString.append("SELECT * \n");
             queryString.append("{ \n");
@@ -200,7 +239,7 @@ queryString.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#>\n");
 
             StringBuffer sb = new StringBuffer();
             sb.append("INSERT DATA ");
-            sb.append("{ GRAPH <http://vitro.mannlib.cornell.edu/default/vitro-kb-2> ");
+            sb.append("{ GRAPH <" + NAMED_GRAPH + "> ");
             sb.append("{ ");
 
             // PUBLIC KEY
@@ -213,7 +252,7 @@ queryString.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#>\n");
             // EXPONENT
             sb.append("_:bnode <http://www.w3.org/ns/auth/cert#exponent> \"65537\"^^<http://www.w3.org/2001/XMLSchema#integer>. ");
             // THE KEY (BLANK NODE)
-            sb.append("<http://vivo.stonybrook.edu/individual/n1431> <http://www.w3.org/ns/auth/cert#key> _:bnode. ");
+            sb.append("<" + BASE + "n1431> <http://www.w3.org/ns/auth/cert#key> _:bnode. ");
 
             sb.append("}");
             sb.append("}");
@@ -375,9 +414,9 @@ queryString.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#>\n");
 
             StringBuffer sb = new StringBuffer();
             sb.append("INSERT DATA ");
-            sb.append("{ GRAPH <http://vitro.mannlib.cornell.edu/default/vitro-kb-2> ");
-            //sb.append("{ <http://vivo.stonybrook.edu/individual/n1559> <http://xmlns.com/foaf/0.1/knows>  <http://vivo.stonybrook.edu/individual/n1431> . }");
-            sb.append("{ <http://vivo.stonybrook.edu/individual/n1559> <http://xmlns.com/foaf/0.1/name>  \"delta\"^^<http://www.w3.org/2001/XMLSchema#string> . }");
+            sb.append("{ GRAPH <" + NAMED_GRAPH + "> ");
+            //sb.append("{ <" + BASE + "n1559> <http://xmlns.com/foaf/0.1/knows>  <" + BASE + "n1431> . }");
+            sb.append("{ <" + BASE + "n1559> <http://xmlns.com/foaf/0.1/name>  \"delta\"^^<http://www.w3.org/2001/XMLSchema#string> . }");
             sb.append("}");
 
             System.out.println(sb.toString());
@@ -455,8 +494,8 @@ queryString.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#>\n");
             OntModelSelector ontModelSelector = ModelContext.getOntModelSelector(getServletContext());
             OntModel model = ontModelSelector.getABoxModel();
 
-            Resource erich = model.getResource("http://vivo.stonybrook.edu/individual/n1559");
-            Resource tammy = model.getResource("http://vivo.stonybrook.edu/individual/n1431");
+            Resource erich = model.getResource("" + BASE + "n1559");
+            Resource tammy = model.getResource("" + BASE + "n1431");
 
             // Create properties for the different types of relationships to represent
             Property hasCert = model.createProperty("http://www.w3.org/ns/auth/cert#", "X509Certificate");

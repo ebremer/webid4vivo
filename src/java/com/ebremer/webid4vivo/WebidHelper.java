@@ -8,16 +8,18 @@ import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.Literal;
+import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.update.GraphStore;
-import com.hp.hpl.jena.update.GraphStoreFactory;
-import com.hp.hpl.jena.update.UpdateAction;
 import edu.cornell.mannlib.vedit.beans.LoginStatusBean;
 import edu.cornell.mannlib.vitro.webapp.beans.UserAccount;
 import edu.cornell.mannlib.vitro.webapp.controller.VitroRequest;
 import edu.cornell.mannlib.vitro.webapp.controller.authenticate.Authenticator;
 import edu.cornell.mannlib.vitro.webapp.dao.UserAccountsDao;
 import edu.cornell.mannlib.vitro.webapp.dao.WebappDaoFactory;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
@@ -109,49 +111,90 @@ public class WebidHelper {
     }
 
     /**
+     * Add data to model.
+     */
+    protected void addIt(HttpServletRequest request, String s) {
+
+        try {
+            VitroRequest vreq = new VitroRequest(request);
+            Dataset dataset = vreq.getDataset();
+
+            Model im = ModelFactory.createDefaultModel();
+
+            InputStream is = null;
+            try {
+                is = new ByteArrayInputStream(s.getBytes("UTF-8"));
+            } catch (UnsupportedEncodingException ex) {
+                System.out.println(ex.toString());
+            }
+            System.out.println("importing...");
+            im.read(is, null, "TTL");
+            im.write(System.out, "TTL");
+            System.out.println("adding triples to kb 2...");
+            Model e = dataset.getNamedModel("http://vitro.mannlib.cornell.edu/default/vitro-kb-2");
+            e.add(im);
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+    
+    /**
+     * Get data from model.
+     */
+    protected void getIt(HttpServletRequest request, String s) {
+
+        try {
+            VitroRequest vreq = new VitroRequest(request);
+            Dataset dataset = vreq.getDataset();
+
+            Model im = ModelFactory.createDefaultModel();
+
+            InputStream is = null;
+            try {
+                is = new ByteArrayInputStream(s.getBytes("UTF-8"));
+            } catch (UnsupportedEncodingException ex) {
+                System.out.println(ex.toString());
+            }
+            System.out.println("importing...");
+            im.read(is, null, "TTL");
+            im.write(System.out, "TTL");
+            System.out.println("adding triples to kb 2...");
+            Model e = dataset.getNamedModel("http://vitro.mannlib.cornell.edu/default/vitro-kb-2");
+            e.add(im);
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }    
+
+    /**
      * Update vivo with person's webid.
      *
      * @param request
      */
     public void updateVivoWithExternalWebid(HttpServletRequest request) {
-        VitroRequest vreq = new VitroRequest(request);
-        String webid = request.getParameter("txtWebId");
 
-        try {
-            //Dataset dataset = vreq.getDataset();
-            //GraphStore graphStore = GraphStoreFactory.create(dataset);
-            OntModel ontModel = getOntModel(request);
+        StringBuffer sb = new StringBuffer();
+        //they probably have made provisions for their fake
+        sb.append("@prefix local: <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> .\n");
+        //sb.append("@prefix local: <http://vivo.stonybrook.edu/local#> .\n");
+        sb.append("@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n");
+        sb.append("<");
+        sb.append(getProfileUri(request));
+        sb.append("> ");
+        sb.append(" local:hasWebIDAssociation _:bnode .\n");
+        sb.append("_:bnode local:hasWebID \n");
+        sb.append("<");
+        sb.append(request.getParameter("txtWebId"));
+        sb.append("> ;\n");
+        sb.append("local:localHosted false ;\n");
+        sb.append("local:me true ;\n");
+        sb.append("rdf:label \"remote\" . \n");
+        System.out.println(sb.toString());
 
-            StringBuffer sb = new StringBuffer();
+        addIt(request, sb.toString());
 
-            sb.append("INSERT DATA ");
-            sb.append("{ GRAPH <http://vitro.mannlib.cornell.edu/default/vitro-kb-2> ");
-            sb.append("{ ");
-
-            sb.append("<");
-            sb.append(getProfileUri(request));
-            sb.append("> ");
-            // SAMEAS DOES EVIL THINGS.
-            // sb.append("<http://www.w3.org/2002/07/owl#sameAs> ");
-            sb.append(" <http://vivo.stonybrook.edu/local#hasWebIDAssociation> _:bnode1. ");
-
-            sb.append("_:bnode1 <http://vivo.stonybrook.edu/local#me> \"true\"^^<http://www.w3.org/2001/XMLSchema#boolean>. ");
-            sb.append("_:bnode1 <http://vivo.stonybrook.edu/local#hasWebID> ");
-            sb.append("<");
-            sb.append(webid);
-            sb.append(">. ");
-            sb.append("_:bnode1 <http://vivo.stonybrook.edu/local#localHosted> \"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>. ");
-            sb.append("_:bnode1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#label> \"remote\".");
-
-            sb.append("}");
-            sb.append("}");
-
-            System.out.println(sb.toString());
-            UpdateAction.parseExecute(sb.toString(), ontModel);
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
     }
 
     /**
@@ -160,62 +203,42 @@ public class WebidHelper {
      * @param request
      */
     public void updateVivoWithGeneratedWebid(HttpServletRequest request, X509Certificate cert) {
-        VitroRequest vreq = new VitroRequest(request);
 
-        // EDIT
-        // UserAccount currentUser = LoginStatusBean.getCurrentUser(vreq);
+        RSAPublicKey certpublickey = (RSAPublicKey) cert.getPublicKey();
+        String modulus = String.format("%0288x", certpublickey.getModulus());
+        String exponent = String.valueOf(certpublickey.getPublicExponent());
 
-        try {
-            //Dataset dataset = vreq.getDataset();
-            //GraphStore graphStore = GraphStoreFactory.create(dataset);
-            
-            OntModel ontModel = getOntModel(request);
+        StringBuffer sb = new StringBuffer();
+        String webid = request.getParameter("webid");
 
-            RSAPublicKey certpublickey = (RSAPublicKey) cert.getPublicKey();
-            String modulus = String.format("%0288x", certpublickey.getModulus());
-            String exponent = String.valueOf(certpublickey.getPublicExponent());
+        sb.append("@prefix cert: <http://www.w3.org/ns/auth/cert#> .\n");
+        sb.append("@prefix local: <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> .\n");
+        sb.append("@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n");
+        sb.append("<");
+        sb.append(webid);
+        sb.append("> ");
+        sb.append(" local:hasWebIDAssociation _:bnode11 .\n");
+        sb.append("_:bnode22 rdf:label \"pretend\" ;\n");
+        sb.append("	a cert:RSAPublicKey ;\n");
+        sb.append("	cert:exponent 123456 ;\n");
+        sb.append("	cert:modulus \n");
+        sb.append("\"");
+        sb.append(modulus);
+        sb.append("\"^^<http://www.w3.org/2001/XMLSchema#hexBinary> . \n");
 
-            StringBuffer sb = new StringBuffer();
+        sb.append("_:bnode11 local:hasWebID \n");
+        sb.append("<");
+        sb.append(webid);
+        sb.append("> ;\n");
+        sb.append("	local:localHosted true ;\n");
+        sb.append("	local:me true ;\n");
+        sb.append("	rdf:label \"home\" ;\n");
+        sb.append("	cert:key _:bnode22 .\n");
+        System.out.println(sb.toString());
 
-            sb.append("INSERT DATA \n");
-            //sb.append("{ GRAPH <http://vitro.mannlib.cornell.edu/default/vitro-kb-2> \n");
-            sb.append("{ \n");
+        addIt(request, sb.toString());
 
-            // WEBID ASSOCIATION
-            sb.append("<");
-            sb.append(request.getParameter("webid"));
-            sb.append("> ");
-            sb.append("<http://vivo.stonybrook.edu/local#hasWebIDAssociation> _:bnode. \n");
-            sb.append("_:bnode <http://vivo.stonybrook.edu/local#me> \"true\"^^<http://www.w3.org/2001/XMLSchema#boolean>. \n");
-            sb.append("_:bnode <http://vivo.stonybrook.edu/local#hasWebID> ");
-            sb.append("<");
-            sb.append(request.getParameter("webid"));
-            sb.append("> . \n");
-            sb.append("_:bnode <http://vivo.stonybrook.edu/local#localHosted> \"true\"^^<http://www.w3.org/2001/XMLSchema#boolean> . \n");
-            sb.append("_:bnode <http://www.w3.org/ns/auth/cert#key> _:thiskeysbnode . \n");
-            sb.append("_:bnode <http://www.w3.org/1999/02/22-rdf-syntax-ns#label> \"home\" . \n");
 
-            // KEY 
-            sb.append("_:thiskeysbnode <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <#RSAPublicKey> . \n"); //<http://www.w3.org/ns/auth/cert#RSAPublicKey>
-            sb.append("_:thiskeysbnode <http://www.w3.org/1999/02/22-rdf-syntax-ns#label> \"pretend\" . \n");
-            // MODULUS
-            sb.append("_:thiskeysbnode <http://www.w3.org/ns/auth/cert#modulus> ");
-            sb.append("\"");
-            sb.append(modulus);
-            sb.append("\"^^<http://www.w3.org/2001/XMLSchema#hexBinary> . \n");
-            // EXPONENT
-            sb.append("_:thiskeysbnode <http://www.w3.org/ns/auth/cert#exponent> ");
-            sb.append(exponent);
-            sb.append(" . \n");
-            //sb.append("}");
-            sb.append("}");
-
-            System.out.println(sb.toString());
-            UpdateAction.parseExecute(sb.toString(), ontModel);
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
     }
 
     /**
@@ -232,8 +255,8 @@ public class WebidHelper {
         StringBuffer queryString = new StringBuffer();
 
         queryString.append("SELECT ?s ?id WHERE { ?s <http://vivo.stonybrook.edu/ns#networkId> ?id ; \n");
-        queryString.append("<http://vivo.stonybrook.edu/local#hasWebIDAssociation> ?bnode . \n");
-        queryString.append("?bnode <http://vivo.stonybrook.edu/local#hasWebID> \n");
+        queryString.append("<http://vitro.mannlib.cornell.edu/ns/vitro/authorization#hasWebIDAssociation> ?bnode . \n");
+        queryString.append("?bnode <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#hasWebID> \n");
 
         queryString.append("<");
         queryString.append(webid);
@@ -279,10 +302,10 @@ public class WebidHelper {
         queryString.append("WHERE { \n");
         queryString.append("<");
         queryString.append(getProfileUri(request));
-        queryString.append(">  <http://vivo.stonybrook.edu/local#hasWebIDAssociation> ?bnode . \n");
-        queryString.append("?bnode <http://vivo.stonybrook.edu/local#me> ?me ; \n");
-        queryString.append("<http://vivo.stonybrook.edu/local#hasWebID> ?hasWebID ; \n");
-        queryString.append("<http://vivo.stonybrook.edu/local#localHosted> ?localHosted ; \n");
+        queryString.append(">  <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#hasWebIDAssociation> ?bnode . \n");
+        queryString.append("?bnode <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#me> ?me ; \n");
+        queryString.append("<http://vitro.mannlib.cornell.edu/ns/vitro/authorization#hasWebID> ?hasWebID ; \n");
+        queryString.append("<http://vitro.mannlib.cornell.edu/ns/vitro/authorization#localHosted> ?localHosted ; \n");
         queryString.append("<http://www.w3.org/1999/02/22-rdf-syntax-ns#label> ?label . \n");
         queryString.append("}\n");
 
