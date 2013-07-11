@@ -5,6 +5,7 @@
  */
 package com.ebremer.webid4vivo;
 
+import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.query.Dataset;
 import com.hp.hpl.jena.query.QueryExecution;
@@ -28,8 +29,11 @@ import edu.cornell.mannlib.vitro.webapp.controller.VitroRequest;
 import edu.cornell.mannlib.vitro.webapp.controller.authenticate.Authenticator;
 import edu.cornell.mannlib.vitro.webapp.dao.jena.ModelContext;
 import edu.cornell.mannlib.vitro.webapp.dao.jena.OntModelSelector;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.lang.String;
 import java.util.Iterator;
 import javax.servlet.ServletException;
@@ -90,35 +94,62 @@ public class tdexp extends HttpServlet {
 
         try {
             Dataset dataset = vreq.getDataset();
+         
+            //Model im = vreq.getJenaOntModel();
+            Model im = ModelFactory.createDefaultModel();
             Iterator i = dataset.listNames();
             System.out.println("The Dataset contains the following graphs...");
-
+            //OntModel mm = vreq.getJenaOntModel();
+           // System.out.println("before : "+mm.size());
             while (i.hasNext()) {
                 System.out.println((String) i.next());
             }
             GraphStore graphStore = GraphStoreFactory.create(dataset);
-            System.out.println("before : "+graphStore.size());
-            StringBuffer sb = new StringBuffer();
-
-            sb.append("INSERT DATA \n");
-            sb.append("{ GRAPH <http://vitro.mannlib.cornell.edu/default/vitro-kb-2> \n");
+         /* Something bizzare going on with VIVO/Jena/SDB and blank nodes, circle back later.... -eb 
+         * StringBuffer sb = new StringBuffer();
+            sb.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#>\n");
+            sb.append("PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n");
+            sb.append("PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n");
+            sb.append("PREFIX rdfs: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n");
+            sb.append("INSERT DATA INTO <http://vitro.mannlib.cornell.edu/default/vitro-kb-2>\n");
             sb.append("{ \n");
+            sb.append("<http://larry.example/profile#me> a foaf:Person;\n");
+            sb.append("foaf:name \"Larry\";\n");
+            sb.append("cert:key <http://larry.example/node1> .\n");
 
-            sb.append("<https://bob.example/profile#me> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Person> . \n");
-            sb.append("<https://bob.example/profile#me> <http://www.w3.org/ns/auth/cert#key> _:b0 .\n");
-            sb.append("_:b0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/auth/cert#RSAPublicKey> .\n");
-            sb.append("_:b0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#label> \"made on 23 November 2011 on my laptop\" . \n");
-            sb.append("_:b0 <http://www.w3.org/ns/auth/cert#modulus> \"00cb24ed85d64d794b69c701c186acc059501e856000f661c93204d8380e07191c5c8b368d2ac32a428acb970398664368dc2a867320220f755e99ca2eecdae62e8d15fb58e1b76ae59cb7ace8838394d59e7250b449176e51a494951a1c366c6217d8768d682dde78dd4d55e613f8839cf275d4c8403743e7862601f3c49a6366e12bb8f498262c3c77de19bce40b32f89ae62c3780f5b6275be337e2b3153ae2ba72a9975ae71ab724649497066b660fcf774b7543d980952d2e8586200eda4158b014e75465d91ecf93efc7ac170c11fc7246fc6ded79c37780000ac4e079f671fd4f207ad770809e0e2d7b0ef5493befe73544d8e1be3dddb52455c61391a1\"^^<http://www.w3.org/2001/XMLSchema#hexBinary> .\n");
-            sb.append("_:b0 <http://www.w3.org/ns/auth/cert#exponent> \"65537\"^^<http://www.w3.org/2001/XMLSchema#integer> .\n");
-            sb.append("<https://bob.example/profile#me> <http://xmlns.com/foaf/0.1/name> \"Bob\" . \n");
-
+            sb.append("<http://larry.example/node1> a cert:RSAPublicKey;\n");
+            sb.append("rdfs:label \"tired and we want to go home\";\n");
+            sb.append("cert:exponent 65537 .\n");
             sb.append("} \n");
-            sb.append("} \n");
-
+          */  
+            StringBuffer sb = new StringBuffer();
+            sb.append("@prefix cert: <http://www.w3.org/ns/auth/cert#> .\n");
+            sb.append("@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n");
+            sb.append("@prefix foaf: <http://xmlns.com/foaf/0.1/> .\n");
+            sb.append("@prefix rdfs: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n");
+            sb.append("<http://larry2.example/profile#me> a foaf:Person .\n");
+            sb.append("<http://larry2.example/profile#me> foaf:name \"Larry2\" .\n");
+            sb.append("<http://larry2.example/profile#me> cert:key _:key .\n");
+            sb.append("_:key a cert:RSAPublicKey .\n");
+            sb.append("_:key rdfs:label \"tired and we want to go home\" .\n");
+            sb.append("_:key cert:exponent 65537 .\n");
             System.out.println(sb.toString());
+            /* avoiding blank node issue for now.... */
+            InputStream is = null;
+            try {
+                is = new ByteArrayInputStream(sb.toString().getBytes("UTF-8"));
+            } catch (UnsupportedEncodingException ex) {
+                System.out.println(ex.toString());
+            }
+            System.out.println("importing...");
+            //im.read(is,"http://vitro.mannlib.cornell.edu/default/vitro-kb-2", "TTL");
+            im.read(is,null, "TTL");
+            im.write(System.out,"TTL");
+            System.out.println("adding triples to kb 2...");
+            Model e = dataset.getNamedModel("http://vitro.mannlib.cornell.edu/default/vitro-kb-2");
+            e.add(im);
             //UpdateAction.parseExecute(sb.toString(), this.ontModel);
-            UpdateAction.parseExecute(sb.toString(), graphStore);
-            System.out.println("after : "+graphStore.size());
+           // UpdateAction.parseExecute(sb.toString(), graphStore);
 
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -131,10 +162,12 @@ public class tdexp extends HttpServlet {
 
             StringBuffer queryString = new StringBuffer();
 
+queryString.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#>\n");
+            queryString.append("PREFIX rdfs: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n");
             queryString.append("SELECT * \n");
             queryString.append("{ \n");
-            queryString.append("<https://bob.example/profile#me> <http://www.w3.org/ns/auth/cert#key> ?o . \n");
-            queryString.append("?o <http://www.w3.org/1999/02/22-rdf-syntax-ns#label> ?oo . \n");
+            queryString.append("<http://larry.example/profile#me> cert:key ?o .\n");
+            queryString.append("?o rdfs:label ?oo .\n");
             queryString.append("} \n");
 
             System.out.println("getIt(): " + queryString);
