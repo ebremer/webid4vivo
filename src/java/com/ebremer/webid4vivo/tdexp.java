@@ -1,13 +1,6 @@
-/**
- * READIN' WRITIN' TEST-BED.
- *
- * REMINDERS: TBox = ontology ABox = Instance data
- */
 package com.ebremer.webid4vivo;
 
 import com.hp.hpl.jena.ontology.OntModel;
-import com.hp.hpl.jena.query.Dataset;
-import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QueryFactory;
@@ -16,43 +9,25 @@ import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
-import com.hp.hpl.jena.rdf.model.Property;
-import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.shared.Lock;
-import com.hp.hpl.jena.sparql.vocabulary.FOAF;
-import com.hp.hpl.jena.update.GraphStore;
-import com.hp.hpl.jena.update.GraphStoreFactory;
-import com.hp.hpl.jena.update.UpdateAction;
-import edu.cornell.mannlib.vitro.webapp.beans.UserAccount;
-import edu.cornell.mannlib.vitro.webapp.controller.VitroRequest;
-import edu.cornell.mannlib.vitro.webapp.controller.authenticate.Authenticator;
-import edu.cornell.mannlib.vitro.webapp.dao.jena.ModelContext;
-import edu.cornell.mannlib.vitro.webapp.dao.jena.OntModelSelector;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.lang.String;
-import java.util.Iterator;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 /**
  *
  * @author tammydiprima
  */
 public class tdexp extends HttpServlet {
-
-    private VitroRequest vreq;
-    private OntModel ontModel;
-    private static final String NAMED_GRAPH = "http://vitro.mannlib.cornell.edu/default/vitro-kb-2";
-    private static final String BASE = "http://vivo.stonybrook.edu/individual/";
-    private static final String ERICH = "n1559";
-    private static final String TAMMY = "n1431";
 
     /**
      * Processes requests for both HTTP
@@ -67,11 +42,6 @@ public class tdexp extends HttpServlet {
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        this.vreq = new VitroRequest(request);
-        this.ontModel = this.vreq.getJenaOntModel();
-
-        //addIt();
-
         response.setContentType("text/html;charset=UTF-8");
         PrintWriter out = response.getWriter();
         out.println("<!DOCTYPE html>");
@@ -82,545 +52,99 @@ public class tdexp extends HttpServlet {
         out.println("<body>");
         out.println("<h1>Servlet tdexp</h1>");
 
-        getIt1(out);
+        /*
+        OntModel userAccts = ontModelSelector.getUserAccountsModel();
 
-        out.println("</body>");
-        out.println("</html>");
-        out.close();
+        OntModel userAccountsModel = ontModelFromContextAttribute(ctx, "userAccountsOntModel");
 
-    }
+        OntModelSelectorImpl baseOms = new OntModelSelectorImpl();
+        baseOms.setUserAccountsModel(userAccountsModel);
+        */
 
-    protected void addIt() {
+        HttpSession session = ((HttpServletRequest) request).getSession(false);
+        ServletContext ctx = session.getServletContext();
+        OntModel userAccts = (OntModel) ctx.getAttribute("userAccountsOntModel");
+        
+        userAccts.enterCriticalSection(Lock.WRITE);
 
+        StringBuffer sb = new StringBuffer();
+        sb.append("@prefix cert: <http://www.w3.org/ns/auth/cert#> .\n");
+        sb.append("@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n");
+        sb.append("@prefix foaf: <http://xmlns.com/foaf/0.1/> .\n");
+        sb.append("@prefix rdfs: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n");
+        sb.append("<http://larry3.example/profile#me> a foaf:Person .\n");
+        sb.append("<http://larry3.example/profile#me> foaf:name \"Larry3\" .\n");
+        sb.append("<http://larry3.example/profile#me> cert:key _:key .\n");
+        sb.append("_:key a cert:RSAPublicKey .\n");
+        sb.append("_:key rdfs:label \"tired and we want to go home\" .\n");
+        sb.append("_:key cert:exponent 65537 .\n");
+        out.println(sb.toString());
+        /* avoiding blank node issue for now.... */
+        InputStream is = null;
         try {
-            Dataset dataset = vreq.getDataset();
-
-            //Model im = vreq.getJenaOntModel();
-            Model im = ModelFactory.createDefaultModel();
-            Iterator i = dataset.listNames();
-            System.out.println("The Dataset contains the following graphs...");
-            //OntModel mm = vreq.getJenaOntModel();
-            // System.out.println("before : "+mm.size());
-            while (i.hasNext()) {
-                System.out.println((String) i.next());
-            }
-            GraphStore graphStore = GraphStoreFactory.create(dataset);
-            /* Something bizzare going on with VIVO/Jena/SDB and blank nodes, circle back later.... -eb 
-             * StringBuffer sb = new StringBuffer();
-             sb.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#>\n");
-             sb.append("PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n");
-             sb.append("PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n");
-             sb.append("PREFIX rdfs: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n");
-             sb.append("INSERT DATA INTO <" + NAMED_GRAPH + ">\n");
-             sb.append("{ \n");
-             sb.append("<http://larry.example/profile#me> a foaf:Person;\n");
-             sb.append("foaf:name \"Larry\";\n");
-             sb.append("cert:key <http://larry.example/node1> .\n");
-
-             sb.append("<http://larry.example/node1> a cert:RSAPublicKey;\n");
-             sb.append("rdfs:label \"tired and we want to go home\";\n");
-             sb.append("cert:exponent 65537 .\n");
-             sb.append("} \n");
-             */
-            StringBuffer sb = new StringBuffer();
-            sb.append("@prefix cert: <http://www.w3.org/ns/auth/cert#> .\n");
-            sb.append("@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n");
-            sb.append("@prefix foaf: <http://xmlns.com/foaf/0.1/> .\n");
-            sb.append("@prefix rdfs: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n");
-            sb.append("<http://larry2.example/profile#me> a foaf:Person .\n");
-            sb.append("<http://larry2.example/profile#me> foaf:name \"Larry2\" .\n");
-            sb.append("<http://larry2.example/profile#me> cert:key _:key .\n");
-            sb.append("_:key a cert:RSAPublicKey .\n");
-            sb.append("_:key rdfs:label \"tired and we want to go home\" .\n");
-            sb.append("_:key cert:exponent 65537 .\n");
-            System.out.println(sb.toString());
-            /* avoiding blank node issue for now.... */
-            InputStream is = null;
-            try {
-                is = new ByteArrayInputStream(sb.toString().getBytes("UTF-8"));
-            } catch (UnsupportedEncodingException ex) {
-                System.out.println(ex.toString());
-            }
-            System.out.println("importing...");
-            //im.read(is,"" + NAMED_GRAPH + "", "TTL");
-            im.read(is, null, "TTL");
-            im.write(System.out, "TTL");
-            System.out.println("adding triples to kb 2...");
-            Model e = dataset.getNamedModel(NAMED_GRAPH);
-            e.add(im);
-            //UpdateAction.parseExecute(sb.toString(), this.ontModel);
-            // UpdateAction.parseExecute(sb.toString(), graphStore);
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
+            is = new ByteArrayInputStream(sb.toString().getBytes("UTF-8"));
+        } catch (UnsupportedEncodingException ex) {
+            out.println(ex.toString());
         }
-    }
+        Model im = ModelFactory.createDefaultModel();
+        im.read(is, null, "TTL");
+        im.write(out, "TTL");
 
-    /**
-     * Get data from model.
-     */
-    protected void getIt1(PrintWriter out) {
+        userAccts.add(im);
+        userAccts.leaveCriticalSection();
 
+        ctx.setAttribute("userAccountsOntModel", userAccts);
         
         
-        Dataset dataset = vreq.getDataset();
+        //////////
         
-        // SparqlQueryServlet does this - 
-        Model model = vreq.getJenaOntModel();
-
-        // We put the data in like this; surely I should be able to get it out the same way -- 
-        //Model model = dataset.getNamedModel("http://vitro.mannlib.cornell.edu/default/vitro-kb-2");
-
-        String queryString = "SELECT ?label \n"
-                + "WHERE { \n"
-                + "<http://vivo.stonybrook.edu/individual/n1431>  <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#hasWebIDAssociation> ?bnode . \n"
-                + "?bnode <http://www.w3.org/1999/02/22-rdf-syntax-ns#label> ?label . \n"
-                + "}";
-        System.out.println(queryString);
-        out.println("<pre>" + queryString + "</pre>");
-
-        Query query = QueryFactory.create(queryString);
-        QueryExecution qexec = QueryExecutionFactory.create(query, model);
-        try {
-            ResultSet results = qexec.execSelect();
-            for (; results.hasNext();) {
-                System.out.println("here");
-                QuerySolution soln = results.nextSolution();
-                //RDFNode x = soln.get("label") ;       // Get a result variable by name.
-                //Resource r = soln.getResource("VarR") ; // Get a result variable - must be a resource
-                Literal l = soln.getLiteral("label");   // Get a result variable - must be a literal
-                System.out.println(l.getString());
-                out.println(l.getString());
-            }
-        } finally {
-            qexec.close();
-        }
-
-    }
-
-    protected String getIt() {
-        String str = "";
         try {
 
             StringBuffer queryString = new StringBuffer();
 
-            queryString.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#>\n");
-            queryString.append("PREFIX rdfs: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n");
-            queryString.append("SELECT * \n");
-            queryString.append("{ \n");
-            queryString.append("<http://larry.example/profile#me> cert:key ?o .\n");
-            queryString.append("?o rdfs:label ?oo .\n");
-            queryString.append("} \n");
+            queryString.append("PREFIX  rdfs: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n");
+            queryString.append("PREFIX  cert: <http://www.w3.org/ns/auth/cert#> \n");
+            queryString.append("PREFIX  foaf: <http://xmlns.com/foaf/0.1/> \n");
+            queryString.append("PREFIX  xsd:  <http://www.w3.org/2001/XMLSchema#> \n");
 
-            System.out.println("getIt(): " + queryString);
+            queryString.append("SELECT ?name ?alabel ?anex \n");
+            queryString.append("WHERE \n");
+            queryString.append("{ <http://larry3.example/profile#me> rdfs:type foaf:Person . \n");
+            queryString.append("<http://larry3.example/profile#me> foaf:name ?name . \n");
+            queryString.append("<http://larry3.example/profile#me> cert:key ?thing . \n");
+            queryString.append("?thing rdfs:type cert:RSAPublicKey . \n");
+            queryString.append("?thing rdfs:label ?alabel . \n");
+            queryString.append("?thing cert:exponent ?anex \n");
+            queryString.append("}");
+
+
+            out.println(queryString);
 
             com.hp.hpl.jena.query.Query query = QueryFactory.create(queryString.toString());
 
-            QueryExecution qe = QueryExecutionFactory.create(query, this.ontModel);
+            QueryExecution qe = QueryExecutionFactory.create(query, userAccts);
 
             ResultSet results = qe.execSelect();
             for (; results.hasNext();) {
+                out.println("HERE.");
                 QuerySolution qsoln = results.nextSolution();
 
-                Literal l = qsoln.getLiteral("oo");
-                str = (String) l.getString();
-                System.out.println((String) l.getString());
+                Literal l = qsoln.getLiteral("alabel");
+                out.println((String) l.getString());
+                
+                l = qsoln.getLiteral("name");
+                out.println((String) l.getString());
 
             }
             qe.close();
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-        return str;
-    }
-
-    protected void arqUpdate1() {
-
-        try {
-            Dataset dataset = this.vreq.getDataset();
-            GraphStore graphStore = GraphStoreFactory.create(dataset);
-
-            StringBuffer sb = new StringBuffer();
-            sb.append("INSERT DATA ");
-            sb.append("{ GRAPH <" + NAMED_GRAPH + "> ");
-            sb.append("{ ");
-
-            // PUBLIC KEY
-            sb.append("_:bnode <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/auth/cert#RSAPublicKey>. ");
-            // MODULUS
-            sb.append("_:bnode <http://www.w3.org/ns/auth/cert#modulus> ");
-            sb.append("\"C9A83116B7465E246622F0DEE7F8752886DE54D59B739DEA2FBE89B0A5AAEAD8B1FC7A58B7BE5248C4CFC6291AF7110C576E1931A50A29884F647735692966345475B15FFE529E24A912D37F2D101AB37EE201E35F38D05EC66B1A8D4B5C0043C05979AE532");
-            sb.append("22D4C153905E1B63DCCC17893DE7E5FC66669A8983FE9A8E1B0E57916793E8E22C9C700D07A9B51A729A1852CFFBFE51F8E9A7E7CDD0C054531C3960C669290E93AAE529145E981B14F0E77CB5FC3D985E43DD6642802CF4F7DDE25EA9EFDD255CAB3786BA2C");
-            sb.append("2263FA3D6D6F86BB48E9149F4D300ECF2661D05C2E19DE89FE6E7D8057232CBEE4746E9D705795905A8D0EBC99043C6261A36493B\"^^<http://www.w3.org/2001/XMLSchema#hexBinary>. ");
-            // EXPONENT
-            sb.append("_:bnode <http://www.w3.org/ns/auth/cert#exponent> \"65537\"^^<http://www.w3.org/2001/XMLSchema#integer>. ");
-            // THE KEY (BLANK NODE)
-            sb.append("<" + BASE + "n1431> <http://www.w3.org/ns/auth/cert#key> _:bnode. ");
-
-            sb.append("}");
-            sb.append("}");
-
-            System.out.println(sb.toString());
-            UpdateAction.parseExecute(sb.toString(), graphStore);
-        } catch (Exception ex) {
-            System.out.println("arqUpdate(): " + ex.toString());
-        }
-
-
-        /*
-         // USE REQUEST OBJECT
         
-         UpdateRequest request = UpdateFactory.create();
-        
-         request.add("DROP ALL")
-         .add("CREATE GRAPH <http://example/g2>")
-         .add("LOAD <file:etc/update-data.ttl> INTO <http://example/g2>");
-
-         // And perform the operations.
-         UpdateAction.execute(request, graphStore);
-                 
-         */
-
-    }
-
-    /**
-     * Testing.
-     *
-     * @param request
-     * @return
-     */
-    protected UserAccount getUserAccount(HttpServletRequest request, String somebody) {
-        return Authenticator.getInstance(request).getAccountForExternalAuth(somebody);
-    }
-
-    /**
-     * Prove that we can read from, and write to, the database.
-     *
-     * @param request
-     * @param response
-     * @param out
-     */
-    protected void readAndWrite(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
-        String uri = ERICH;
-        String uri1 = TAMMY;
-        String name = "";
-
-        try {
-            // Query
-            name = m_query(uri);
-            out.println("<p>");
-            out.println("Simple query: Who is " + uri + "?<br>");
-            out.println(name);
-            out.println("</p>");
-        } catch (Exception a) {
-            System.out.println("a: " + a.toString());
-        }
-
-
-        boolean result_of_ASK;
-        try {
-            // Ask
-            result_of_ASK = m_search(uri);
-            out.println("<p>");
-            out.println("ASK: Does anybody know " + name + "??<br>");
-            out.println(result_of_ASK);
-            out.println("</p>");
-        } catch (Exception b) {
-            System.out.println("b: " + b.toString());
-        }
-
-        // One of these methods gotta work!
-        testInsertMethods(request, response, out);
-
-        try {
-            // Ask again to see if a record was entered
-            // TODO: THIS RETURNS FALSE. WHY?
-            result_of_ASK = m_search(uri);
-            out.println("<p>");
-            out.println("NOW, does anybody know Erich??<br>");
-            out.println(result_of_ASK);
-            out.println("</p>");
-        } catch (Exception g) {
-            System.out.println("g: " + g.toString());
-        }
-
-
-    }
-
-    /**
-     * Test methods of insertion, figure out what works.
-     *
-     * @param request
-     * @param response
-     * @param out
-     */
-    protected void testInsertMethods(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
-        String uri = ERICH;
-        String uri1 = TAMMY;
-
-        // Insert
-        out.println("<p>");
-        //out.println("Inserting foaf:knows triples for Erich & Tammy<br>");
-        out.println("Inserting foaf:name triples for Erich<br>");
-
-        // TEST SET 1:
-        try {
-            out.println("Test alpha<br>");
-            m_insert(uri, uri1);
-        } catch (Exception c) {
-            System.out.println("c: " + c.toString());
-        }
-
-        // TEST SET 2:
-        try {
-            out.println("Test beta<br>");
-            addTripleToDefaultGraph(uri);
-        } catch (Exception d) {
-            System.out.println("d: " + d.toString());
-        }
-
-        // TEST SET 3:
-        try {
-            out.println("Test gamma<br>");
-            vivoInsert(uri, uri1);
-        } catch (Exception e) {
-            System.out.println("e: " + e.toString());
-        }
-
-        try {
-            // TEST SET 4:
-            out.println("Test delta<br>");
-            arqUpdate();
-
-            out.println("</p>");
-        } catch (Exception f) {
-            System.out.println("f: " + f.toString());
-        }
-
-    }
-
-    /**
-     * DELTA WORKED. ARQ - SPARQL Update.
-     * http://jena.apache.org/documentation/query/update.html
-     */
-    protected void arqUpdate() {
-
-        try {
-            Dataset dataset = this.vreq.getDataset();
-            GraphStore graphStore = GraphStoreFactory.create(dataset);
-
-            // READ FROM FILE
-            //UpdateAction.readExecute("update.ru", graphStore);
-
-            // REQUEST AS STRING
-            //UpdateAction.parseExecute("[DON'T] DROP ALL", graphStore);
-
-            StringBuffer sb = new StringBuffer();
-            sb.append("INSERT DATA ");
-            sb.append("{ GRAPH <" + NAMED_GRAPH + "> ");
-            //sb.append("{ <" + BASE + "n1559> <http://xmlns.com/foaf/0.1/knows>  <" + BASE + "n1431> . }");
-            sb.append("{ <" + BASE + "n1559> <http://xmlns.com/foaf/0.1/name>  \"delta\"^^<http://www.w3.org/2001/XMLSchema#string> . }");
-            sb.append("}");
-
-            System.out.println(sb.toString());
-            UpdateAction.parseExecute(sb.toString(), graphStore);
-        } catch (Exception ex) {
-            System.out.println("arqUpdate(): " + ex.toString());
-        }
-
-
-        /*
-         // USE REQUEST OBJECT
-        
-         UpdateRequest request = UpdateFactory.create();
-        
-         request.add("DROP ALL")
-         .add("CREATE GRAPH <http://example/g2>")
-         .add("LOAD <file:etc/update-data.ttl> INTO <http://example/g2>");
-
-         // And perform the operations.
-         UpdateAction.execute(request, graphStore);
-                 
-         */
-
-    }
-
-    /**
-     * GAMMA WORKED.
-     *
-     * References: IndividualDaoJena.getExternalIds()
-     * IndividualDaoJena.addVClass() RDFUploadController
-     *
-     * Reminders: TBox = ontology ABox = Instance data
-     */
-    protected void vivoInsert(String uri, String uri1) {
-        String individualURI = BASE + uri;
-        String individualURI1 = BASE + uri1;
-
-        OntModelSelector ontModelSelector = ModelContext.getOntModelSelector(getServletContext());
-
-        OntModel aboxModel = ontModelSelector.getABoxModel();
-        aboxModel.enterCriticalSection(Lock.WRITE);
-        //ontModel.getBaseModel().notifyEvent(new IndividualUpdateEvent(getWebappDaoFactory().getUserURI(),true,individualURI));
-        try {
-            Resource indRes = aboxModel.getResource(individualURI);
-            //aboxModel.add(indRes, FOAF.knows, aboxModel.getResource(individualURI1));
-            aboxModel.add(indRes, FOAF.name, "gamma");
-            //aboxModel.commit(); //<== java.lang.UnsupportedOperationException: this model does not support transactions
-            //System.out.println("commit failed... again."); // PROBABLY EXPLAINS WHY I NEVER SEE VIVO "COMMIT()"
-            //updatePropertyDateTimeValue(indRes, MODTIME, Calendar.getInstance().getTime(),ontModel);
-        } catch (Exception ex) {
-            System.out.println("vivoInsert(): " + ex.toString());
-        } finally {
-            //aboxModel.getBaseModel().notifyEvent(new IndividualUpdateEvent(getWebappDaoFactory().getUserURI(),false,individualURI));
-            aboxModel.leaveCriticalSection();
-        }
-
-    }
-
-    /**
-     * Insert "tammy foaf:knows erich". WORKS.
-     *
-     * @param request
-     */
-    protected void m_insert(HttpServletRequest request) {
-
-        System.out.println("Insert a record...");
-
-
-        try {
-
-            // SO FAR WE HAVE ERICH FOAF:KNOWS TAMMY.
-            // LET'S PUT TAMMY FOAF:KNOWS ERICH.
-
-            // Using this model:
-            OntModelSelector ontModelSelector = ModelContext.getOntModelSelector(getServletContext());
-            OntModel model = ontModelSelector.getABoxModel();
-
-            Resource erich = model.getResource("" + BASE + "n1559");
-            Resource tammy = model.getResource("" + BASE + "n1431");
-
-            // Create properties for the different types of relationships to represent
-            Property hasCert = model.createProperty("http://www.w3.org/ns/auth/cert#", "X509Certificate");
-
-            // Create a Resource for each thing, identified by their URI
-            Resource certResource = model.createResource("http://yabbadabbadoo1/foaf.me");
-
-            // Create statements
-            //Statement statement = model.createStatement(tammy,FOAF.knows,erich);
-            Statement statement = model.createStatement(tammy, hasCert, certResource);
-
-            // add the created statement to the model
-            model.add(statement);
-
-        } catch (Exception idk) {
-            System.out.println("m_insert(): " + idk.toString());
-        }
-
-    }
-
-    /**
-     * Prove: I can insert data. Insert "erich foaf:knows tammy".
-     * http://jena.sourceforge.net/tutorial/RDF_API/
-     */
-    protected void m_insert(String uri, String uri1) {
-
-        String personURI = BASE + uri;
-        String personURI1 = BASE + uri1;
-
-        try {
-            Model model = ModelFactory.createDefaultModel();
-
-            Resource person = model.createResource(personURI);
-            person.addProperty(FOAF.name, "alpha");
-            //Resource person1 = model.createResource(personURI1);
-
-            //person.addProperty(FOAF.knows, person1);
-            //person1.addProperty(FOAF.knows, person);
-
-            model.write(System.out);
-
-            ontModel.add(model);
-
-        } catch (Exception idk) {
-            System.out.println("m_insert(): " + idk.toString());
-        }
-
-    }
-
-    /**
-     * Insert Attempt #2.
-     * http://pic.dhe.ibm.com/infocenter/db2luw/v10r1/topic/com.ibm.swg.im.dbclient.rdf.doc/doc/c0060617.html.
-     */
-    public void addTripleToDefaultGraph(String personURI) {
-
-        try {
-            System.out.println("addTripleToDefaultGraph");
-
-            Dataset ds = this.vreq.getDataset();
-            Model m = ds.getDefaultModel();
-
-            // Adding via model
-            m.begin();
-
-            String fullName = "beta";
-            Resource johnSmith = m.createResource(BASE + personURI);
-            //Resource johnSmith = ontModel.createResource(personURI);
-            johnSmith.addProperty(FOAF.name, fullName);
-
-            m.commit();
-            m.close();
-
-
-        } catch (Exception ex) {
-            System.out.println("addTripleToDefaultGraph(): " + ex.toString());
-        }
-    }
-
-    /**
-     * SELECT queries. do a simple query find a triple in this person's profile
-     * http://jena.apache.org/documentation/query/app_api.html
-     */
-    protected String m_query(String uri) {
-        String queryString = "SELECT ?name WHERE { <" + BASE + uri + "> <http://xmlns.com/foaf/0.1/firstName>  ?name }";
-        com.hp.hpl.jena.query.Query query = QueryFactory.create(queryString);
-
-        String name = "";
-
-        QueryExecution qe = QueryExecutionFactory.create(query, ontModel);
-
-        ResultSet results = qe.execSelect();
-        for (; results.hasNext();) {
-            QuerySolution qsoln = results.nextSolution();
-            Literal really = qsoln.getLiteral("name");
-            name = really.getString();
-        }
-        qe.close();
-
-        return name;
-
-    }
-
-    /**
-     * ASK Queries. search the entire database ask and see if it returns true
-     * http://jena.apache.org/documentation/query/app_api.html
-     */
-    protected boolean m_search(String uri) {
-        // Ask, "Does anybody know [this person]??"
-        StringBuffer sb = new StringBuffer();
-        sb.append("PREFIX foaf:    <http://xmlns.com/foaf/0.1/> ");
-        sb.append("ASK  { ?x foaf:knows  <" + BASE + uri + "> }");
-
-        String queryString = sb.toString();
-        System.out.println(queryString);
-
-        com.hp.hpl.jena.query.Query query = QueryFactory.create(queryString);
-
-        QueryExecution qe = QueryExecutionFactory.create(query, ontModel);
-        boolean result = qe.execAsk();
-        qe.close();
-
-        return result;
+                
+        out.println("</body>");
+        out.println("</html>");
+        out.close();
 
     }
 
