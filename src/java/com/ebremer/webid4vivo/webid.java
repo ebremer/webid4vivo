@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import javax.servlet.http.HttpServletRequest;
 
 public class webid {
 
@@ -55,51 +56,48 @@ public class webid {
         }
     }
 
-    public String getSparqlQuery() {
-        // ASK {?webid :key [ :modulus ?mod; :exponent ?exp; ] .}
+    public boolean verified(HttpServletRequest request) {
 
-        StringBuffer sp = new StringBuffer();
+        String namespace = new WebidHelper().getNamespace(request);
+        StringBuffer sb = new StringBuffer();
+        sb.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#> \n");
+        sb.append("PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> \n");
+        sb.append("PREFIX auth: <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> \n");
 
-        /*
-         sp.append("PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ");
-         sp.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#> ");
-         sp.append("PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> ");
-         sp.append("PREFIX auth: <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> ");
-         sp.append("ASK {<");
-         sp.append(uri);
-         sp.append("> ");
-         sp.append("cert:key [ cert:modulus \"");
-         sp.append(modulus);
-         sp.append("\"^^xsd:hexBinary;");
-         sp.append("cert:exponent ");
-         sp.append(exponent);
-         sp.append("; ] .}");
-         */
+        System.out.println("namespace: " + namespace);
+        System.out.println("uri: " + uri);
 
-        sp.append("PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ");
-        sp.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#> ");
-        sp.append("PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> ");
-        sp.append("PREFIX auth: <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> ");
-        sp.append("ASK { ?s auth:hasWebIDAssociation [ auth:hasWebID \n");
-        sp.append("<");
-        sp.append(uri);
-        sp.append("> ; ");
-        sp.append("cert:key [ cert:modulus \"");
-        sp.append(modulus);
-        sp.append("\"^^xsd:hexBinary;");
-        sp.append("cert:exponent ");
-        sp.append(exponent);
-        sp.append("; ] ] .}");
+        if (uri.contains(namespace)) {
+            sb.append("ASK { ?s auth:hasWebIDAssociation \n");
+            sb.append("[ auth:hasWebID \n");
+            sb.append("<");
+            sb.append(uri);
+            sb.append("> ; \n");
+            sb.append("cert:key \n");
+            sb.append("[ cert:modulus \"");
+            sb.append(modulus);
+            sb.append("\"^^xsd:hexBinary; \n");
+            sb.append("cert:exponent ");
+            sb.append(exponent);
+            sb.append("; ] ] . }");
+        } else {
+            sb.append("ASK { <");
+            sb.append(uri);
+            sb.append("> cert:key \n");
+            sb.append("[ cert:modulus \"");
+            sb.append(modulus);
+            sb.append("\"^^xsd:hexBinary ; \n");
+            sb.append("cert:exponent ");
+            sb.append(exponent);
+            sb.append("; ] . }");
+        }
 
-        return sp.toString();
+        System.out.println(sb.toString());
 
-    }
-
-    public boolean verified() {
         model = ModelFactory.createDefaultModel();
         model.read(uri, "RDF/XML");
 
-        com.hp.hpl.jena.query.Query query = QueryFactory.create(getSparqlQuery());
+        com.hp.hpl.jena.query.Query query = QueryFactory.create(sb.toString());
 
         QueryExecution qe = QueryExecutionFactory.create(query, model);
         if (qe.execAsk()) {

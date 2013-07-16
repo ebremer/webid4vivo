@@ -77,8 +77,7 @@ public class WebidController extends HttpServlet {
             // VERIFY CERTIFICATE
             cert = certs[0];
             wid = new webid(cert);
-            boolean verified = wid.verified();
-            System.out.println(wid.getSparqlQuery());
+            boolean verified = wid.verified(request);
 
             if (verified) {
                 WebidHelper x = new WebidHelper();
@@ -224,10 +223,10 @@ public class WebidController extends HttpServlet {
                 while (it.hasNext()) {
                     WebIDAssociation bean = (WebIDAssociation) it.next();
                     out.println("<tr>");
-                    out.println("<tr><td>" + bean.getWebId() + "</td></tr>");
-                    out.println("<tr><td>" + bean.getLabel() + "</td></tr>");
-                    out.println("<tr><td>" + bean.isMe() + "</td></tr>");
-                    out.println("<tr><td>" + bean.isLocalHosted() + "</td></tr>");
+                    out.println("<td>" + bean.getWebId() + "</td>");
+                    out.println("<td>" + bean.getLabel() + "</td>");
+                    out.println("<td>" + bean.isMe() + "</td>");
+                    out.println("<td>" + bean.isLocalHosted() + "</td>");
                     out.println("</tr>");
                 }
                 out.println("</table>");

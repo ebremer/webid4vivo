@@ -79,6 +79,7 @@ public class ebexp extends HttpServlet {
 
         WebidHelper x = new WebidHelper();
         UserAccount u = x.getCurrentUserAccount(request);
+        String profileUri = x.getProfileUri(request);
         if (u != null) {
             try {
                 out.println("<!DOCTYPE html>");
@@ -94,7 +95,7 @@ public class ebexp extends HttpServlet {
                 out.println("<keygen id=\"pubkey\" name=\"pubkey\" challenge=\"randomchars\" keytype=\"rsa\" hidden>");
                 out.println("<input type=\"hidden\" name=\"first\" value=\"" + u.getFirstName() + "\" >");
                 out.println("<input type=\"hidden\" name=\"last\" value=\"" + u.getLastName() + "\" >");
-                out.println("<input type=\"hidden\" name=\"webid\" value=\"" + x.getProfileUri(request) + "\" >");
+                out.println("<input type=\"hidden\" name=\"webid\" value=\"" + profileUri + "\" >");
 
                 out.println("<table>");
                 out.println("<tr>");
@@ -109,7 +110,7 @@ public class ebexp extends HttpServlet {
 
                 out.println("<tr>");
                 out.println("<td align=\"right\"><b>WebID</b></td>");
-                out.println("<td>" + x.getProfileUri(request) + "</td>");
+                out.println("<td>" + profileUri + "</td>");
                 out.println("</tr>");
 
                 out.println("<tr>");
@@ -270,9 +271,6 @@ public class ebexp extends HttpServlet {
             pemWriter.writeObject(theCert);
             pemWriter.close();
             byte[] ser = sw.toString().getBytes("UTF-8");
-            System.out.println("START WHAT.");
-            System.out.println(ser);
-            System.out.println("END WHAT.");
             out.write(ser);
 
         } finally {

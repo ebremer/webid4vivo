@@ -92,47 +92,54 @@ public class WebidHelper {
      */
     protected UserAccount getUserAccount(HttpServletRequest request, String webid) {
         StringBuffer queryString = new StringBuffer();
-        queryString.append("PREFIX  rdfs: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n");
-        queryString.append("PREFIX  cert: <http://www.w3.org/ns/auth/cert#> \n");
-        queryString.append("PREFIX  foaf: <http://xmlns.com/foaf/0.1/> \n");
-        queryString.append("PREFIX  xsd:  <http://www.w3.org/2001/XMLSchema#> \n");
         queryString.append("PREFIX  auth:  <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> \n");
-
-        queryString.append("SELECT ?s \n");
-        queryString.append("WHERE { ?s \n");
-        queryString.append("auth:hasWebIDAssociation ?bnode . \n");
-        queryString.append("?bnode auth:hasWebID \n");
+        queryString.append("SELECT ?s WHERE { \n");
+        queryString.append("?s auth:hasWebIDAssociation ?bnode . \n");
+        queryString.append("?bnode auth:hasWebID ");
         queryString.append("<");
         queryString.append(webid);
-        queryString.append("> . }\n");
+        queryString.append("> . }");
 
         System.out.println(queryString);
+        String userAcctUri = "";
 
         com.hp.hpl.jena.query.Query query = QueryFactory.create(queryString.toString());
 
-        OntModel ontModel = getOntModel(request);
-        QueryExecution qe = QueryExecutionFactory.create(query, ontModel);
+        HttpSession session = ((HttpServletRequest) request).getSession(false);
+        ServletContext ctx = session.getServletContext();
+        OntModelSelector ontModelSelector = ModelContext.getOntModelSelector(ctx);
+        OntModel userAccts = ontModelSelector.getUserAccountsModel();
+        // Enter a critical section. The application must call leaveCriticialSection.
+        userAccts.enterCriticalSection(Lock.READ);
 
-        String userAcctUri = "";
-        ResultSet results = qe.execSelect();
-        for (; results.hasNext();) {
-            QuerySolution qsoln = results.nextSolution();
+        try {
+            QueryExecution qe = QueryExecutionFactory.create(query, userAccts);
 
-            Resource r = qsoln.getResource("s");
-            userAcctUri = (String) r.getURI();
+            ResultSet results = qe.execSelect();
+            for (; results.hasNext();) {
+                QuerySolution qsoln = results.nextSolution();
 
+                Resource r = qsoln.getResource("s");
+                userAcctUri = (String) r.getURI();
+
+            }
+            qe.close();
+        } finally {
+            // Releases the lock from the matching enterCriticalSection.
+            userAccts.leaveCriticalSection();
+            //aboxModel.close();
         }
-        qe.close();
 
         if (!userAcctUri.isEmpty()) {
+            System.out.println("userAcctUri: " + userAcctUri);
             return getUserAccountByUri(request, userAcctUri);
 
         } else {
+            System.out.println("userAcctUri is blank");
             return null;
         }
 
     }
-
 
     /**
      *
@@ -190,21 +197,20 @@ public class WebidHelper {
 
         StringBuffer sb = new StringBuffer();
         //they probably have made provisions for their fake
-        sb.append("@prefix local: <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> .\n");
-        //sb.append("@prefix local: <http://vivo.stonybrook.edu/local#> .\n");
-        sb.append("@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n");
+        sb.append("@prefix auth: <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> .\n");
+        sb.append("@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n");
         sb.append("<");
         //sb.append(getProfileUri(request));
         sb.append(userAccount.getUri());
         sb.append("> ");
-        sb.append(" local:hasWebIDAssociation _:bnode .\n");
-        sb.append("_:bnode local:hasWebID \n");
+        sb.append(" auth:hasWebIDAssociation _:bnode .\n");
+        sb.append("_:bnode auth:hasWebID \n");
         sb.append("<");
         sb.append(request.getParameter("txtWebId"));
         sb.append("> ;\n");
-        sb.append("local:localHosted false ;\n");
-        sb.append("local:me true ;\n");
-        sb.append("rdf:label \"remote\" . \n");
+        sb.append("auth:localHosted false ;\n");
+        sb.append("auth:me true ;\n");
+        sb.append("rdfs:label \"remote\" . \n");
         System.out.println(sb.toString());
 
         addIt(request, sb.toString());
@@ -228,28 +234,29 @@ public class WebidHelper {
         String webid = request.getParameter("webid");
 
         sb.append("@prefix cert: <http://www.w3.org/ns/auth/cert#> .\n");
-        sb.append("@prefix local: <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> .\n");
-        sb.append("@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n");
+        sb.append("@prefix auth: <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> .\n");
+        sb.append("@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n");
         sb.append("<");
         //sb.append(webid);
         sb.append(userAccount.getUri());
         sb.append("> ");
-        sb.append(" local:hasWebIDAssociation _:bnode11 .\n");
-        sb.append("_:bnode22 rdf:label \"pretend\" ;\n");
-        sb.append("	a cert:RSAPublicKey ;\n");
-        sb.append("	cert:exponent 123456 ;\n");
-        sb.append("	cert:modulus \n");
+        sb.append(" auth:hasWebIDAssociation _:bnode11 .\n");
+        sb.append("_:bnode22 rdfs:label \"pretend\" ;\n");
+        sb.append("     a cert:RSAPublicKey ;\n");
+        sb.append("     cert:exponent ");
+        sb.append(exponent);
+        sb.append(";    cert:modulus \n");
         sb.append("\"");
         sb.append(modulus);
         sb.append("\"^^<http://www.w3.org/2001/XMLSchema#hexBinary> . \n");
 
-        sb.append("_:bnode11 local:hasWebID \n");
+        sb.append("_:bnode11 auth:hasWebID \n");
         sb.append("<");
         sb.append(webid);
         sb.append("> ;\n");
-        sb.append("	local:localHosted true ;\n");
-        sb.append("	local:me true ;\n");
-        sb.append("	rdf:label \"home\" ;\n");
+        sb.append("	auth:localHosted true ;\n");
+        sb.append("	auth:me true ;\n");
+        sb.append("	rdfs:label \"home\" ;\n");
         sb.append("	cert:key _:bnode22 .\n");
         System.out.println(sb.toString());
 
@@ -267,48 +274,80 @@ public class WebidHelper {
 
         StringBuffer queryString = new StringBuffer();
 
-        queryString.append("PREFIX  rdfs: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n");
-        queryString.append("PREFIX  cert: <http://www.w3.org/ns/auth/cert#> \n");
-        queryString.append("PREFIX  foaf: <http://xmlns.com/foaf/0.1/> \n");
-        queryString.append("PREFIX  xsd:  <http://www.w3.org/2001/XMLSchema#> \n");
         queryString.append("PREFIX  auth:  <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> \n");
+        queryString.append("PREFIX  rdfs:  <http://www.w3.org/2000/01/rdf-schema#> \n");
 
-        queryString.append("SELECT ?hasWebIDAssociation ?me ?hasWebID ?localHosted ?label \n");
+        queryString.append("SELECT ?hasWebIDAssociation ?me ?webid ?localHosted ?label \n");
         queryString.append("WHERE { \n");
         queryString.append("<");
         //queryString.append(getProfileUri(request));
-        queryString.append(this.getCurrentUserAccount(request));
+        queryString.append(this.getCurrentUserAccount(request).getUri());
         queryString.append(">\n");
 
         queryString.append("auth:hasWebIDAssociation ?bnode . \n");
         queryString.append("?bnode auth:me ?me ; \n");
-        queryString.append("auth:hasWebID ?hasWebID ; \n");
+        queryString.append("auth:hasWebID ?webid ; \n");
         queryString.append("auth:localHosted ?localHosted ; \n");
         queryString.append("rdfs:label ?label . \n");
         queryString.append("}");
 
-        System.out.println("listWebids: " + queryString);
-
-        com.hp.hpl.jena.query.Query query = QueryFactory.create(queryString.toString());
-
-        OntModel ontModel = getOntModel(request);
-
-        QueryExecution qe = QueryExecutionFactory.create(query, ontModel);
+        System.out.println("listWebids:");
+        System.out.println(queryString);
 
         ArrayList<WebIDAssociation> webidList = new ArrayList();
-        ResultSet results = qe.execSelect();
+        
+        com.hp.hpl.jena.query.Query query = QueryFactory.create(queryString.toString());
+        
+        HttpSession session = ((HttpServletRequest) request).getSession(false);
+        ServletContext ctx = session.getServletContext();
+        OntModelSelector ontModelSelector = ModelContext.getOntModelSelector(ctx);
+        OntModel userAccts = ontModelSelector.getUserAccountsModel();
 
-        for (; results.hasNext();) {
-            QuerySolution q = results.nextSolution();
-            webidList.add(new WebIDAssociation(q.getLiteral("me").getBoolean(), q.getResource("webid").getURI(), q.getLiteral("localHosted").getBoolean(), q.getLiteral("label").getString()));
+        // Enter a critical section. The application must call leaveCriticialSection.
+        userAccts.enterCriticalSection(Lock.READ);
 
-            // TODO: ADD ROLE.
-            //out.println("<tr><td>" + really.getString() + "</td><td>Self-Edit</td></tr>");
+        try {
+            QueryExecution qe = QueryExecutionFactory.create(query, userAccts);
+
+            ResultSet results = qe.execSelect();
+            for (; results.hasNext();) {
+                
+                QuerySolution q = results.nextSolution();
+                boolean me = q.getLiteral("me").getBoolean();
+                System.out.println(me);
+                String webid = (String) q.getResource("webid").getURI();
+                System.out.println(webid);
+                boolean localHosted = q.getLiteral("localHosted").getBoolean();
+                System.out.println(localHosted);
+                String label = q.getLiteral("label").getString();
+                System.out.println(label);
+                
+                webidList.add(new WebIDAssociation(me, webid, localHosted, label));
+
+                // TODO: ADD ROLE.
+                //out.println("<tr><td>" + really.getString() + "</td><td>Self-Edit</td></tr>");
+            }
+            qe.close();
+        } 
+        finally {
+            // Releases the lock from the matching enterCriticalSection.
+            userAccts.leaveCriticalSection();
+            //aboxModel.close();
         }
-        qe.close();
+
 
         return webidList;
 
+    }
+
+    /**
+     * Get Default Namespace.
+     *
+     * @param request
+     * @return
+     */
+    public String getNamespace(HttpServletRequest request) {
+        return new VitroRequest(request).getWebappDaoFactory().getDefaultNamespace();
     }
 
     /**
@@ -327,12 +366,6 @@ public class WebidHelper {
 
         if (userAccount != null) {
             StringBuffer queryString = new StringBuffer();
-
-            // Fetch profile URI, by email address.
-            //String email = userAccount.getEmailAddress();
-            //queryString.append("SELECT ?s WHERE { ?s <http://vivoweb.org/ontology/core#primaryEmail> \"");
-            //queryString.append(email);
-            //queryString.append("\" . }");            
 
             // Fetch Profile URI, by network ID.
             queryString.append("SELECT ?uri WHERE { ?uri <http://vivo.stonybrook.edu/ns#networkId> \"");

@@ -64,7 +64,7 @@ public class auth extends HttpServlet
                 cert = certs[0];
                 wid = new webid(cert);
                 
-                out.println("<br>WebID is " + (wid.verified() ? "verified" : "not verified"));
+                out.println("<br>WebID is " + (wid.verified(request) ? "verified" : "not verified"));
                 
                 out.println("<br>WebID URI is " + wid.getURI());
             }
