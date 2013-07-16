@@ -1,18 +1,9 @@
 package com.ebremer.webid4vivo;
 
-import com.hp.hpl.jena.query.Dataset;
-import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.ModelFactory;
-import com.hp.hpl.jena.update.GraphStore;
-import com.hp.hpl.jena.update.GraphStoreFactory;
 import edu.cornell.mannlib.vitro.webapp.beans.UserAccount;
-import edu.cornell.mannlib.vitro.webapp.controller.VitroRequest;
-import java.io.ByteArrayInputStream;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -24,9 +15,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.servlet.http.HttpServlet;
 
-/**
- * Assuming - you've already associated your WebID with your VIVO account.
- */
 public class WebidController extends HttpServlet {
 
     private static final int NO_CERT = 1;
@@ -72,6 +60,7 @@ public class WebidController extends HttpServlet {
      */
     protected void attemptLogin(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
+        // GET CERTIFICATE
         int message = 0;
         X509Certificate[] certs = null;
         X509Certificate cert = null;
@@ -84,35 +73,30 @@ public class WebidController extends HttpServlet {
         }
 
         if (certs != null) {
+
+            // VERIFY CERTIFICATE
             cert = certs[0];
             wid = new webid(cert);
-
             boolean verified = wid.verified();
+            System.out.println(wid.getSparqlQuery());
 
             if (verified) {
                 WebidHelper x = new WebidHelper();
 
-                // Get network id to get handle to user account.
-                String[] keys = x.getIdsForLogin(request, wid.getURI());
+                // GET USER ACCOUNT
+                UserAccount userAccount = x.getUserAccount(request, wid.getURI());
 
-                if (keys[0].isEmpty()) {
+                if (userAccount == null) {
+                    System.out.println("user account is null");
                     message = NOT_ASSOCIATED;
                 } else {
-                    UserAccount userAccount = x.getUserAccount(request, keys[1]);
+                    try {
+                        // LOG IN USER.
+                        x.recordLogin(request, userAccount);
 
-                    if (userAccount != null) {
-                        try {
-                            // User account found.
-                            // Log user in.
-                            x.recordLogin(request, userAccount);
-
-                        } catch (Exception ex) {
-                            System.out.println("Login failed. " + ex.toString());
-                            message = LOGIN_FAIL;
-                        }
-                    } else {
-                        // User account not found.
-                        message = ACCOUNT;
+                    } catch (Exception ex) {
+                        System.out.println("Login failed. " + ex.toString());
+                        message = LOGIN_FAIL;
                     }
 
                 }

@@ -60,20 +60,36 @@ public class webid {
 
         StringBuffer sp = new StringBuffer();
 
+        /*
+         sp.append("PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ");
+         sp.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#> ");
+         sp.append("PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> ");
+         sp.append("PREFIX auth: <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> ");
+         sp.append("ASK {<");
+         sp.append(uri);
+         sp.append("> ");
+         sp.append("cert:key [ cert:modulus \"");
+         sp.append(modulus);
+         sp.append("\"^^xsd:hexBinary;");
+         sp.append("cert:exponent ");
+         sp.append(exponent);
+         sp.append("; ] .}");
+         */
+
         sp.append("PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ");
-        sp.append("PREFIX : <http://www.w3.org/ns/auth/cert#> ");
+        sp.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#> ");
         sp.append("PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> ");
-        sp.append("ASK {<");
+        sp.append("PREFIX auth: <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> ");
+        sp.append("ASK { ?s auth:hasWebIDAssociation [ auth:hasWebID \n");
+        sp.append("<");
         sp.append(uri);
-        sp.append("> ");
-        sp.append(":key [ :modulus \"");
+        sp.append("> ; ");
+        sp.append("cert:key [ cert:modulus \"");
         sp.append(modulus);
         sp.append("\"^^xsd:hexBinary;");
-        sp.append(":exponent ");
+        sp.append("cert:exponent ");
         sp.append(exponent);
-        sp.append("; ] .}");
-
-
+        sp.append("; ] ] .}");
 
         return sp.toString();
 

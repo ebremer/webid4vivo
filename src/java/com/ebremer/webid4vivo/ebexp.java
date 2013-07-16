@@ -166,13 +166,10 @@ public class ebexp extends HttpServlet {
         String webid = request.getParameter("webid");
         String sDays = request.getParameter("days");
         int iDays = 0;
-        
-        try
-        {
+
+        try {
             iDays = Integer.parseInt(sDays.trim());
-        }
-        catch (NumberFormatException nfe)
-        {
+        } catch (NumberFormatException nfe) {
             iDays = 365;
         }
 
@@ -196,7 +193,11 @@ public class ebexp extends HttpServlet {
         nb.addRDN(BCStyle.OU, "The Community Of Self Signers");
 
         // The VIVO data URI is fed in here
-        nb.addRDN(BCStyle.UID, webid);
+        //nb.addRDN(BCStyle.UID, webid);
+
+        // User Account Uri
+        WebidHelper x = new WebidHelper();
+        nb.addRDN(BCStyle.UID, x.getCurrentUserAccount(request).getUri());
 
         // We need to decide what will go here since this is exposed when user select WebID in browser
         StringBuffer sb = new StringBuffer();
@@ -255,13 +256,13 @@ public class ebexp extends HttpServlet {
             Logger.getLogger(ebexp.class.getName()).log(Level.SEVERE, null, ex);
         }
         is1.close();
-        
+
         response.setContentType("application/x-x509-user-cert");
         ServletOutputStream out = response.getOutputStream();
-        
+
         // OK WE'RE DONE CREATING THE CERT! UPDATE VIVO.
-        new WebidHelper().updateVivoWithGeneratedWebid(request, theCert);
-        
+        x.updateVivoWithGeneratedWebid(request, theCert);
+
         // Finally, send WebID certificate to client
         try {
             StringWriter sw = new StringWriter();
