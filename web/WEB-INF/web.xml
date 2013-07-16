@@ -4,9 +4,17 @@
         <servlet-name>ebexp</servlet-name>
         <servlet-class>com.ebremer.webid4vivo.ebexp</servlet-class>
     </servlet>
+    <servlet>
+        <servlet-name>Gollum</servlet-name>
+        <servlet-class>com.ebremer.webid4vivo.Gollum</servlet-class>
+    </servlet>
     <servlet-mapping>
         <servlet-name>ebexp</servlet-name>
         <url-pattern>/ebexp</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>Gollum</servlet-name>
+        <url-pattern>/Gollum</url-pattern>
     </servlet-mapping>
     <session-config>
         <session-timeout>

@@ -100,6 +100,7 @@ public class WebidHelper {
         queryString.append(webid);
         queryString.append("> . }");
 
+        System.out.println(new java.util.Date() + " GET USER ACCOUNT");
         System.out.println(queryString);
         String userAcctUri = "";
 
@@ -131,11 +132,9 @@ public class WebidHelper {
         }
 
         if (!userAcctUri.isEmpty()) {
-            System.out.println("userAcctUri: " + userAcctUri);
             return getUserAccountByUri(request, userAcctUri);
 
         } else {
-            System.out.println("userAcctUri is blank");
             return null;
         }
 
@@ -211,6 +210,8 @@ public class WebidHelper {
         sb.append("auth:localHosted false ;\n");
         sb.append("auth:me true ;\n");
         sb.append("rdfs:label \"remote\" . \n");
+        
+        System.out.println(new java.util.Date() + " INSERT RECORD");
         System.out.println(sb.toString());
 
         addIt(request, sb.toString());
@@ -258,6 +259,8 @@ public class WebidHelper {
         sb.append("	auth:me true ;\n");
         sb.append("	rdfs:label \"home\" ;\n");
         sb.append("	cert:key _:bnode22 .\n");
+        
+        System.out.println(new java.util.Date() + " INSERT RECORD");
         System.out.println(sb.toString());
 
         addIt(request, sb.toString());
@@ -291,7 +294,7 @@ public class WebidHelper {
         queryString.append("rdfs:label ?label . \n");
         queryString.append("}");
 
-        System.out.println("listWebids:");
+        System.out.println(new java.util.Date() + " LIST WEBIDS");
         System.out.println(queryString);
 
         ArrayList<WebIDAssociation> webidList = new ArrayList();
@@ -314,13 +317,9 @@ public class WebidHelper {
                 
                 QuerySolution q = results.nextSolution();
                 boolean me = q.getLiteral("me").getBoolean();
-                System.out.println(me);
                 String webid = (String) q.getResource("webid").getURI();
-                System.out.println(webid);
                 boolean localHosted = q.getLiteral("localHosted").getBoolean();
-                System.out.println(localHosted);
                 String label = q.getLiteral("label").getString();
-                System.out.println(label);
                 
                 webidList.add(new WebIDAssociation(me, webid, localHosted, label));
 

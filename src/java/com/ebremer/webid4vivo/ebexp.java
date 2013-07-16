@@ -112,6 +112,11 @@ public class ebexp extends HttpServlet {
                 out.println("<td align=\"right\"><b>WebID</b></td>");
                 out.println("<td>" + profileUri + "</td>");
                 out.println("</tr>");
+                
+                out.println("<tr>");
+                out.println("<td align=\"right\"><b>Label</b></td>");
+                out.println("<td><input type=\"text\" name=\"label\" maxlength=\"100\"></td>");
+                out.println("</tr>");                
 
                 out.println("<tr>");
                 out.println("<td align=\"right\"><b>Number Days Valid</b></td>");
@@ -166,6 +171,7 @@ public class ebexp extends HttpServlet {
         String last = request.getParameter("last");
         String webid = request.getParameter("webid");
         String sDays = request.getParameter("days");
+        String label = request.getParameter("label");
         int iDays = 0;
 
         try {
@@ -201,11 +207,14 @@ public class ebexp extends HttpServlet {
         nb.addRDN(BCStyle.UID, x.getCurrentUserAccount(request).getUri());
 
         // We need to decide what will go here since this is exposed when user select WebID in browser
+        
         StringBuffer sb = new StringBuffer();
         sb.append(first.trim());
         sb.append(" ");
         sb.append(last.trim());
-        sb.append("'s VIVO WebID");
+        sb.append("'s VIVO WebID - ");
+        sb.append(label);
+        
         nb.addRDN(BCStyle.CN, sb.toString());
         X500Name subject = nb.build();
 

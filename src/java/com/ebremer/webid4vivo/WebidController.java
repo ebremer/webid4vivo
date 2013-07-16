@@ -86,7 +86,6 @@ public class WebidController extends HttpServlet {
                 UserAccount userAccount = x.getUserAccount(request, wid.getURI());
 
                 if (userAccount == null) {
-                    System.out.println("user account is null");
                     message = NOT_ASSOCIATED;
                 } else {
                     try {
@@ -94,7 +93,6 @@ public class WebidController extends HttpServlet {
                         x.recordLogin(request, userAccount);
 
                     } catch (Exception ex) {
-                        System.out.println("Login failed. " + ex.toString());
                         message = LOGIN_FAIL;
                     }
 
@@ -197,11 +195,9 @@ public class WebidController extends HttpServlet {
             try {
                 webidList = x.getWebIdList(request);
                 if (webidList.isEmpty()) {
-                    System.out.println("webidList - isEmpty");
                     found = false;
                 }
             } catch (NullPointerException npe) {
-                System.out.println("webidList - NullPointerException");
                 found = false;
             }
 

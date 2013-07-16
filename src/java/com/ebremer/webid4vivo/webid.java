@@ -5,11 +5,15 @@ package com.ebremer.webid4vivo;
  * @author Erich Bremer
  * @author Tammy DiPrima
  */
+import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
+import com.hp.hpl.jena.shared.Lock;
+import edu.cornell.mannlib.vitro.webapp.dao.jena.ModelContext;
+import edu.cornell.mannlib.vitro.webapp.dao.jena.OntModelSelector;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
@@ -17,7 +21,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 public class webid {
 
@@ -26,7 +32,8 @@ public class webid {
     private String uri = null;
     private String modulus = null;
     private String exponent = null;
-    private Model model = null;
+    private Model model = null;    
+    
 
     webid(X509Certificate cert) {
         this.cert = cert;
@@ -58,14 +65,12 @@ public class webid {
 
     public boolean verified(HttpServletRequest request) {
 
+        boolean result = false;
         String namespace = new WebidHelper().getNamespace(request);
         StringBuffer sb = new StringBuffer();
         sb.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#> \n");
         sb.append("PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> \n");
         sb.append("PREFIX auth: <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> \n");
-
-        System.out.println("namespace: " + namespace);
-        System.out.println("uri: " + uri);
 
         if (uri.contains(namespace)) {
             sb.append("ASK { ?s auth:hasWebIDAssociation \n");
@@ -80,6 +85,31 @@ public class webid {
             sb.append("cert:exponent ");
             sb.append(exponent);
             sb.append("; ] ] . }");
+            
+            System.out.println(new java.util.Date() + " VERIFY");
+            System.out.println(sb.toString());            
+            
+            HttpSession session = ((HttpServletRequest) request).getSession(false);
+            ServletContext ctx = session.getServletContext();
+            OntModelSelector ontModelSelector = ModelContext.getOntModelSelector(ctx);
+            OntModel userAccts = ontModelSelector.getUserAccountsModel();
+            
+            // Enter a critical section. The application must call leaveCriticialSection.
+            userAccts.enterCriticalSection(Lock.READ);
+            
+            try {
+                com.hp.hpl.jena.query.Query query = QueryFactory.create(sb.toString());
+
+                QueryExecution qe = QueryExecutionFactory.create(query, userAccts);
+                result = qe.execAsk();
+                qe.close();
+            } catch (Exception ex) {
+                System.out.println("ask failed");
+                System.out.println(ex.toString());
+            } finally {
+                userAccts.leaveCriticalSection();
+            }
+
         } else {
             sb.append("ASK { <");
             sb.append(uri);
@@ -90,21 +120,22 @@ public class webid {
             sb.append("cert:exponent ");
             sb.append(exponent);
             sb.append("; ] . }");
+
+            System.out.println(new java.util.Date() + " VERIFY");
+            System.out.println(sb.toString());
+
+            model = ModelFactory.createDefaultModel();
+            model.read(uri, "RDF/XML");
+
+            com.hp.hpl.jena.query.Query query = QueryFactory.create(sb.toString());
+
+            QueryExecution qe = QueryExecutionFactory.create(query, model);
+            result = qe.execAsk();
+            qe.close();
+
         }
 
-        System.out.println(sb.toString());
-
-        model = ModelFactory.createDefaultModel();
-        model.read(uri, "RDF/XML");
-
-        com.hp.hpl.jena.query.Query query = QueryFactory.create(sb.toString());
-
-        QueryExecution qe = QueryExecutionFactory.create(query, model);
-        if (qe.execAsk()) {
-            return true;
-        } else {
-            return false;
-        }
+        return result;
     }
 
     public X509Certificate getCert() {
