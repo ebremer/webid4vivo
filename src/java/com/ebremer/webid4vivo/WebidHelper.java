@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
+import java.util.Random;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -154,16 +155,19 @@ public class WebidHelper {
     /**
      * Add data to model.
      */
-    protected void addIt(HttpServletRequest request, String s) {
-
-        // ServletRequest#getServletContext() method is introduced in Servlet 3.0
-        //OntModelSelector ontModelSelector = ModelContext.getOntModelSelector(request.getServletContext());
+    protected void addIt(HttpServletRequest request, String s, boolean acctsModel) {
 
         HttpSession session = ((HttpServletRequest) request).getSession(false);
         ServletContext ctx = session.getServletContext();
         OntModelSelector ontModelSelector = ModelContext.getOntModelSelector(ctx);
-        OntModel userAccts = ontModelSelector.getUserAccountsModel();
-        userAccts.enterCriticalSection(Lock.WRITE);
+        OntModel model = null;
+        
+        if (acctsModel)
+            model = ontModelSelector.getUserAccountsModel();
+        else
+            model = ontModelSelector.getABoxModel();
+        
+        model.enterCriticalSection(Lock.WRITE);
         try {
             /* avoiding blank node issue for now.... */
             InputStream is = null;
@@ -174,14 +178,23 @@ public class WebidHelper {
             }
             Model im = ModelFactory.createDefaultModel();
             im.read(is, null, "TTL");
+            
+            String whichModel = "";
+            
+            if (acctsModel)
+                whichModel = "Accounts Model";
+            else
+                whichModel = "Public ABox Model";
+            
+            System.out.println(new java.util.Date() + " adding record to " + whichModel);
             im.write(System.out, "TTL");
-
-            userAccts.add(im);
+            model.add(im);
+            
         } catch (Exception ex) {
             System.out.println("addIt(): " + ex.toString());
         } finally {
             //aboxModel.getBaseModel().notifyEvent(new IndividualUpdateEvent(getWebappDaoFactory().getUserURI(),false,individualURI));
-            userAccts.leaveCriticalSection();
+            model.leaveCriticalSection();
         }
     }
 
@@ -211,10 +224,31 @@ public class WebidHelper {
         sb.append("auth:me true ;\n");
         sb.append("rdfs:label \"remote\" . \n");
         
-        System.out.println(new java.util.Date() + " INSERT RECORD");
-        System.out.println(sb.toString());
-
-        addIt(request, sb.toString());
+        addIt(request, sb.toString(), true);
+        
+        StringBuffer str = new StringBuffer();
+        String uri = request.getParameter("txtWebId");
+        
+        Random random = new Random(System.currentTimeMillis());
+        int blah = Math.abs(random.nextInt());
+        //System.out.println(String.valueOf(blah));
+                
+        //they probably have made provisions for their fake
+        str.append("@prefix auth: <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> .\n");
+        str.append("@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n");
+        str.append("<");
+        str.append(getProfileUri(request));
+        str.append("> ");
+        str.append(" auth:hasWebIDAssociation <http://vivo.stonybrook.edu/individual/n" + blah + "> .\n");
+        str.append("<http://vivo.stonybrook.edu/individual/n" + blah + "> auth:hasWebID \n");
+        str.append("<");
+        str.append(uri);
+        str.append("> ;\n");
+        str.append("auth:localHosted false ;\n");
+        str.append("auth:me true ;\n");
+        str.append("rdfs:label \"remote\" . \n");        
+        
+        addIt(request, str.toString(), false);
 
     }
 
@@ -230,6 +264,7 @@ public class WebidHelper {
         RSAPublicKey certpublickey = (RSAPublicKey) cert.getPublicKey();
         String modulus = String.format("%0288x", certpublickey.getModulus());
         String exponent = String.valueOf(certpublickey.getPublicExponent());
+        String label = request.getParameter("label");
 
         StringBuffer sb = new StringBuffer();
         String webid = request.getParameter("webid");
@@ -238,19 +273,9 @@ public class WebidHelper {
         sb.append("@prefix auth: <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> .\n");
         sb.append("@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n");
         sb.append("<");
-        //sb.append(webid);
         sb.append(userAccount.getUri());
         sb.append("> ");
         sb.append(" auth:hasWebIDAssociation _:bnode11 .\n");
-        sb.append("_:bnode22 rdfs:label \"pretend\" ;\n");
-        sb.append("     a cert:RSAPublicKey ;\n");
-        sb.append("     cert:exponent ");
-        sb.append(exponent);
-        sb.append(";    cert:modulus \n");
-        sb.append("\"");
-        sb.append(modulus);
-        sb.append("\"^^<http://www.w3.org/2001/XMLSchema#hexBinary> . \n");
-
         sb.append("_:bnode11 auth:hasWebID \n");
         sb.append("<");
         sb.append(webid);
@@ -259,12 +284,47 @@ public class WebidHelper {
         sb.append("	auth:me true ;\n");
         sb.append("	rdfs:label \"home\" ;\n");
         sb.append("	cert:key _:bnode22 .\n");
+        sb.append("_:bnode22 a cert:RSAPublicKey ;\n");
+        sb.append("     cert:exponent ");
+        sb.append(exponent);
+        sb.append(";    cert:modulus \n");
+        sb.append("\"");
+        sb.append(modulus);
+        sb.append("\"^^<http://www.w3.org/2001/XMLSchema#hexBinary> . \n");
+
+
+        addIt(request, sb.toString(), true);
         
-        System.out.println(new java.util.Date() + " INSERT RECORD");
-        System.out.println(sb.toString());
+        StringBuffer str = new StringBuffer();
+        Random random = new Random(System.currentTimeMillis());
+        int blah = Math.abs(random.nextInt());  
+        
+        int blah1 = Math.abs(random.nextInt()+1);
+        
+        str.append("@prefix cert: <http://www.w3.org/ns/auth/cert#> .\n");
+        str.append("@prefix auth: <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> .\n");
+        str.append("@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n");
+        str.append("<");
+        str.append(webid);
+        str.append("> ");
+        str.append(" auth:hasWebIDAssociation <http://vivo.stonybrook.edu/individual/n" + blah + "> .\n");
+        str.append("<http://vivo.stonybrook.edu/individual/n" + blah + "> auth:hasWebID \n");
+        str.append("<");
+        str.append(webid);
+        str.append("> ;\n");
+        str.append("	auth:localHosted true ;\n");
+        str.append("	auth:me true ;\n");
+        str.append("	rdfs:label \"home\" ;\n");
+        str.append("	cert:key <http://vivo.stonybrook.edu/individual/n" + blah1 + "> .\n");
+        str.append("<http://vivo.stonybrook.edu/individual/n" + blah1 + "> a cert:RSAPublicKey ;\n");
+        str.append("     cert:exponent ");
+        str.append(exponent);
+        str.append(";    cert:modulus \n");
+        str.append("\"");
+        str.append(modulus);
+        str.append("\"^^<http://www.w3.org/2001/XMLSchema#hexBinary> . \n");
 
-        addIt(request, sb.toString());
-
+        addIt(request, str.toString(), false);
 
     }
 

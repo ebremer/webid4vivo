@@ -26,6 +26,7 @@ import com.hp.hpl.jena.update.UpdateAction;
 import edu.cornell.mannlib.vitro.webapp.controller.VitroRequest;
 import edu.cornell.mannlib.vitro.webapp.dao.jena.ModelContext;
 import edu.cornell.mannlib.vitro.webapp.dao.jena.OntModelSelector;
+import edu.cornell.mannlib.vitro.webapp.edit.n3editing.VTwo.NewURIMaker;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,6 +34,7 @@ import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.lang.String;
 import java.util.Iterator;
+import java.util.Random;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -76,7 +78,15 @@ public class tdexp extends HttpServlet {
         out.println("</head>");
         out.println("<body>");
 
-        writeAndRead(request, response, out);
+        //Random random = new Random(System.currentTimeMillis());
+        //int blah = Math.abs(random.nextInt());
+        //System.out.println(String.valueOf(blah));
+
+        //NewURIMaker newURIMaker = NewURIMaker();
+        //String uriii = newURIMaker.getUnusedNewURI(String.valueOf(blah));
+        //System.out.println(uriii);
+        
+        //writeAndRead(request, response, out);
         //readAndWrite(request, response, out);
 
         out.println("</body>");

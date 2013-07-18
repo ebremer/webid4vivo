@@ -281,10 +281,14 @@ public class ebexp extends HttpServlet {
             pemWriter.close();
             byte[] ser = sw.toString().getBytes("UTF-8");
             out.write(ser);
+            //System.out.println("ser=" + ser);
 
         } finally {
             out.close();
         }
+        
+        response.sendRedirect("/torrini?2");
+        
     }
 
     @Override
