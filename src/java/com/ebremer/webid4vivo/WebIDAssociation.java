@@ -13,12 +13,22 @@ public class WebIDAssociation {
     private String webId;
     private boolean localHosted;
     private String label;
+    private String uuid;
 
-    public WebIDAssociation(boolean me, String webId, boolean localHosted, String label) {
+    public WebIDAssociation(boolean me, String webId, boolean localHosted, String label, String uuid) {
         this.me = me;
         this.webId = webId;
         this.localHosted = localHosted;
         this.label = label;
+        this.uuid = uuid;
+    }
+
+    public String getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
     }
 
     public boolean isMe() {

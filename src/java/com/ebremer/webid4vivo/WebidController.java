@@ -102,7 +102,7 @@ public class WebidController extends HttpServlet {
                 out.println("<td>&nbsp;</td><td>&nbsp;</td>");
                 out.println("<td><a href=\"ebexp\" target=\"ebexpwin\">Create</a></td></tr>");
                 out.println("<tr><td colspan=\"2\"><b><u>Webids currently associated with your profile:</u></b></td></tr>");
-                out.println("<tr><td><b>WebID</b></td><td><b>Label</b></td><td><b>Me</b></td><td><b>Local-Hosted</b></td></tr>");
+                out.println("<tr><td><b>WebID</b></td><td><b>Label</b></td><td><b>Me</b></td><td><b>Local-Hosted</b></td><td><b>Delete</b></td></tr>");
                 //out.println("<tr><td colspan=\"2\"><b>WebID</b></td></tr>");
 
                 Iterator it = webidList.iterator();
@@ -113,6 +113,7 @@ public class WebidController extends HttpServlet {
                     out.println("<td>" + bean.getLabel() + "</td>");
                     out.println("<td>" + bean.isMe() + "</td>");
                     out.println("<td>" + bean.isLocalHosted() + "</td>");
+                    out.println("<td><input type=checkbox name=id value=\"" + bean.getUuid() + "\"></td>");
                     out.println("</tr>");
                 }
                 out.println("</table>");

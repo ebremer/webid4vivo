@@ -23,7 +23,7 @@ import java.io.InputStream;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
-import java.util.Random;
+import java.util.UUID;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -208,18 +208,33 @@ public class WebidHelper {
         UserAccount userAccount = getCurrentUserAccount(request);
 
         StringBuffer sb = new StringBuffer();
-        //they probably have made provisions for their fake
+        
+        UUID rand = UUID.randomUUID();
+        String webidAssocURI = "http://vivo.stonybrook.edu/individual/n" + rand;
+        
+        rand = UUID.randomUUID();
+        String uuid = "http://vivo.stonybrook.edu/individual/n" + rand;        
+        
         sb.append("@prefix auth: <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> .\n");
         sb.append("@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n");
         sb.append("<");
-        //sb.append(getProfileUri(request));
         sb.append(userAccount.getUri());
         sb.append("> ");
-        sb.append(" auth:hasWebIDAssociation _:bnode .\n");
-        sb.append("_:bnode auth:hasWebID \n");
+        sb.append(" auth:hasWebIDAssociation ");
+        sb.append("<");
+        sb.append(webidAssocURI);
+        sb.append("> .\n");
+        sb.append("<");
+        sb.append(webidAssocURI);
+        sb.append("> ");         
+        sb.append(" auth:hasWebID ");
         sb.append("<");
         sb.append(request.getParameter("txtWebId"));
         sb.append("> ;\n");
+        sb.append(" auth:hasUUID ");
+        sb.append("<");
+        sb.append(uuid);
+        sb.append("> ;\n");        
         sb.append("auth:localHosted false ;\n");
         sb.append("auth:me true ;\n");
         sb.append("rdfs:label \"remote\" . \n");
@@ -229,27 +244,6 @@ public class WebidHelper {
         StringBuffer str = new StringBuffer();
         String uri = request.getParameter("txtWebId");
         
-        Random random = new Random(System.currentTimeMillis());
-        int blah = Math.abs(random.nextInt());
-        //System.out.println(String.valueOf(blah));
-                
-        //they probably have made provisions for their fake
-        str.append("@prefix auth: <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> .\n");
-        str.append("@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n");
-        str.append("<");
-        str.append(getProfileUri(request));
-        str.append("> ");
-        str.append(" auth:hasWebIDAssociation <http://vivo.stonybrook.edu/individual/n" + blah + "> .\n");
-        str.append("<http://vivo.stonybrook.edu/individual/n" + blah + "> auth:hasWebID \n");
-        str.append("<");
-        str.append(uri);
-        str.append("> ;\n");
-        str.append("auth:localHosted false ;\n");
-        str.append("auth:me true ;\n");
-        str.append("rdfs:label \"remote\" . \n");        
-        
-        addIt(request, str.toString(), false);
-
     }
 
     /**
@@ -268,6 +262,15 @@ public class WebidHelper {
 
         StringBuffer sb = new StringBuffer();
         String webid = request.getParameter("webid");
+        
+        UUID rand = UUID.randomUUID();
+        String webidAssocURI = "http://vivo.stonybrook.edu/individual/n" + rand;
+        
+        rand = UUID.randomUUID();
+        String uuid = "http://vivo.stonybrook.edu/individual/n" + rand;
+
+        rand = UUID.randomUUID();
+        String key = "http://vivo.stonybrook.edu/individual/n" + rand;        
 
         sb.append("@prefix cert: <http://www.w3.org/ns/auth/cert#> .\n");
         sb.append("@prefix auth: <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> .\n");
@@ -275,19 +278,35 @@ public class WebidHelper {
         sb.append("<");
         sb.append(userAccount.getUri());
         sb.append("> ");
-        sb.append(" auth:hasWebIDAssociation _:bnode11 .\n");
-        sb.append("_:bnode11 auth:hasWebID \n");
+        sb.append(" auth:hasWebIDAssociation ");
+        sb.append("<");
+        sb.append(webidAssocURI);
+        sb.append("> .\n");
+        sb.append("<");
+        sb.append(webidAssocURI);
+        sb.append("> ");          
+        sb.append(" auth:hasWebID ");
         sb.append("<");
         sb.append(webid);
         sb.append("> ;\n");
-        sb.append("	auth:localHosted true ;\n");
-        sb.append("	auth:me true ;\n");
-        sb.append("	rdfs:label \"home\" ;\n");
-        sb.append("	cert:key _:bnode22 .\n");
-        sb.append("_:bnode22 a cert:RSAPublicKey ;\n");
-        sb.append("     cert:exponent ");
+        sb.append(" auth:localHosted true ;\n");
+        sb.append(" auth:me true ;\n");
+        sb.append(" rdfs:label \"home\" ;\n");
+        sb.append(" auth:hasUUID ");
+        sb.append("<");
+        sb.append(uuid);
+        sb.append("> ;\n");         
+        sb.append(" cert:key ");
+        sb.append("<");
+        sb.append(key);
+        sb.append("> .\n");
+        sb.append("<");
+        sb.append(key);
+        sb.append("> ");          
+        sb.append(" a cert:RSAPublicKey ;\n");
+        sb.append(" cert:exponent ");
         sb.append(exponent);
-        sb.append(";    cert:modulus \n");
+        sb.append(";\n cert:modulus ");
         sb.append("\"");
         sb.append(modulus);
         sb.append("\"^^<http://www.w3.org/2001/XMLSchema#hexBinary> . \n");
@@ -296,10 +315,7 @@ public class WebidHelper {
         addIt(request, sb.toString(), true);
         
         StringBuffer str = new StringBuffer();
-        Random random = new Random(System.currentTimeMillis());
-        int blah = Math.abs(random.nextInt());  
-        
-        int blah1 = Math.abs(random.nextInt()+1);
+
         
         str.append("@prefix cert: <http://www.w3.org/ns/auth/cert#> .\n");
         str.append("@prefix auth: <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> .\n");
@@ -307,19 +323,17 @@ public class WebidHelper {
         str.append("<");
         str.append(webid);
         str.append("> ");
-        str.append(" auth:hasWebIDAssociation <http://vivo.stonybrook.edu/individual/n" + blah + "> .\n");
-        str.append("<http://vivo.stonybrook.edu/individual/n" + blah + "> auth:hasWebID \n");
+        str.append(" cert:key ");
         str.append("<");
-        str.append(webid);
-        str.append("> ;\n");
-        str.append("	auth:localHosted true ;\n");
-        str.append("	auth:me true ;\n");
-        str.append("	rdfs:label \"home\" ;\n");
-        str.append("	cert:key <http://vivo.stonybrook.edu/individual/n" + blah1 + "> .\n");
-        str.append("<http://vivo.stonybrook.edu/individual/n" + blah1 + "> a cert:RSAPublicKey ;\n");
-        str.append("     cert:exponent ");
+        str.append(key);
+        str.append("> .\n");
+        str.append("<");
+        str.append(key);
+        str.append("> ");          
+        str.append(" a cert:RSAPublicKey ;\n");
+        str.append(" cert:exponent ");
         str.append(exponent);
-        str.append(";    cert:modulus \n");
+        str.append(";\n cert:modulus ");
         str.append("\"");
         str.append(modulus);
         str.append("\"^^<http://www.w3.org/2001/XMLSchema#hexBinary> . \n");
@@ -340,7 +354,7 @@ public class WebidHelper {
         queryString.append("PREFIX  auth:  <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> \n");
         queryString.append("PREFIX  rdfs:  <http://www.w3.org/2000/01/rdf-schema#> \n");
 
-        queryString.append("SELECT ?hasWebIDAssociation ?me ?webid ?localHosted ?label \n");
+        queryString.append("SELECT ?hasWebIDAssociation ?me ?webid ?localHosted ?uuid ?label \n");
         queryString.append("WHERE { \n");
         queryString.append("<");
         //queryString.append(getProfileUri(request));
@@ -351,6 +365,7 @@ public class WebidHelper {
         queryString.append("?bnode auth:me ?me ; \n");
         queryString.append("auth:hasWebID ?webid ; \n");
         queryString.append("auth:localHosted ?localHosted ; \n");
+        queryString.append("auth:hasUUID ?uuid ; \n");
         queryString.append("rdfs:label ?label . \n");
         queryString.append("}");
 
@@ -380,8 +395,17 @@ public class WebidHelper {
                 String webid = (String) q.getResource("webid").getURI();
                 boolean localHosted = q.getLiteral("localHosted").getBoolean();
                 String label = q.getLiteral("label").getString();
-                
-                webidList.add(new WebIDAssociation(me, webid, localHosted, label));
+                String uuid = "";
+                try
+                {
+                    uuid = q.getLiteral("uuid").getString();
+                }
+                catch(Exception ex)
+                {
+                    //don't care right now.
+                }
+
+                webidList.add(new WebIDAssociation(me, webid, localHosted, label, uuid));
 
                 // TODO: ADD ROLE.
                 //out.println("<tr><td>" + really.getString() + "</td><td>Self-Edit</td></tr>");

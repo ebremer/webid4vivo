@@ -26,15 +26,19 @@ import com.hp.hpl.jena.update.UpdateAction;
 import edu.cornell.mannlib.vitro.webapp.controller.VitroRequest;
 import edu.cornell.mannlib.vitro.webapp.dao.jena.ModelContext;
 import edu.cornell.mannlib.vitro.webapp.dao.jena.OntModelSelector;
-import edu.cornell.mannlib.vitro.webapp.edit.n3editing.VTwo.NewURIMaker;
+import edu.cornell.mannlib.vitro.webapp.rdfservice.ChangeSet;
+import edu.cornell.mannlib.vitro.webapp.rdfservice.RDFService;
+import edu.cornell.mannlib.vitro.webapp.rdfservice.RDFServiceException;
+import edu.cornell.mannlib.vitro.webapp.servlet.setup.JenaDataSourceSetupBase;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.lang.String;
 import java.util.Iterator;
-import java.util.Random;
+import java.util.List;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -48,7 +52,8 @@ public class tdexp extends HttpServlet {
 
     private VitroRequest vreq;
     //private OntModel ontModel;
-    private static final String NAMED_GRAPH = "http://vitro.mannlib.cornell.edu/default/vitro-kb-2";
+    private static final String PUBLIC_GRAPH = "http://vitro.mannlib.cornell.edu/default/vitro-kb-2";
+    private static final String PRIVATE_GRAPH = "<http://vitro.mannlib.cornell.edu/default/vitro-kb-userAccounts>";
     private static final String BASE = "http://vivo.stonybrook.edu/individual/";
     private static final String ERICH = "n1559";
     private static final String TAMMY = "n1431";
@@ -78,20 +83,133 @@ public class tdexp extends HttpServlet {
         out.println("</head>");
         out.println("<body>");
 
-        //Random random = new Random(System.currentTimeMillis());
-        //int blah = Math.abs(random.nextInt());
-        //System.out.println(String.valueOf(blah));
-
-        //NewURIMaker newURIMaker = NewURIMaker();
-        //String uriii = newURIMaker.getUnusedNewURI(String.valueOf(blah));
-        //System.out.println(uriii);
-        
-        //writeAndRead(request, response, out);
-        //readAndWrite(request, response, out);
+        delete1(out);
 
         out.println("</body>");
         out.println("</html>");
         out.close();
+
+    }
+
+    protected void delete1(PrintWriter out) throws ServletException, IOException {
+
+        StringBuffer queryString = new StringBuffer();
+
+        // deleted too much!
+        queryString.append("PREFIX  loc:  <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> \n");
+        queryString.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#> \n");
+        queryString.append("DELETE \n");
+        queryString.append("WHERE \n");
+        queryString.append("  { <http://vivo.stonybrook.edu/individual/u2315> loc:hasWebIDAssociation ?assoc . \n");
+        //queryString.append("    ?assoc loc:hasUUID ?uuid .\n");
+        queryString.append("    ?assoc ?p ?o . \n");
+        queryString.append("    ?assoc cert:key ?key . \n");
+        queryString.append("    ?key ?pp ?oo . \n");
+        queryString.append("  } \n");
+        
+        // This deletes everything up to, but not including, the public key:
+        /*
+        queryString.append("PREFIX  loc:  <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> \n");
+        queryString.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#> \n");
+        queryString.append("DELETE \n");
+        queryString.append("WHERE \n");
+        queryString.append("  { <http://vivo.stonybrook.edu/individual/u2315> loc:hasWebIDAssociation ?bnode1 . \n");
+        queryString.append("    ?bnode1 ?p ?o .\n");
+        queryString.append("    ?bnode1 cert:key ?bnode2 . \n");
+        queryString.append("    ?bnode2 ?pp ?oo .\n");
+        queryString.append("  } \n");
+        */
+
+        // you can't use OPTIONAL with DELETE WHERE
+        /*
+        queryString.append("PREFIX  loc:  <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> \n");
+        queryString.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#> \n");
+        queryString.append("DELETE { \n");
+        queryString.append("GRAPH ?graph { ");
+        queryString.append("  <http://vivo.stonybrook.edu/individual/u2315> loc:hasWebIDAssociation ?bnode . \n");
+        queryString.append("    ?bnode ?p ?o .\n");
+        queryString.append("    ?bnode cert:key ?key . \n");
+        queryString.append("    ?key ?ppp ?ooo . \n");
+        queryString.append("  } }\n");        
+        queryString.append("WHERE { \n");
+        queryString.append("GRAPH ?graph { ");
+        queryString.append("  <http://vivo.stonybrook.edu/individual/u2315> loc:hasWebIDAssociation ?bnode . \n");
+        queryString.append("    ?bnode ?p ?o .\n");
+        queryString.append("    optional { ?bnode cert:key ?key . \n");
+        queryString.append("    { ?key ?ppp ?ooo . } }  \n");
+        queryString.append("  } } \n");
+        */
+       
+        
+        out.println("<pre>" + queryString.toString() + "</pre>");
+
+        OntModelSelector ontModelSelector = ModelContext.getOntModelSelector(getServletContext());
+
+        OntModel userAccts = ontModelSelector.getUserAccountsModel();
+        //OntModel aboxModel = ontModelSelector.getABoxModel();
+
+        userAccts.enterCriticalSection(Lock.WRITE);
+        try {
+            UpdateAction.parseExecute(queryString.toString(), userAccts);
+
+        } catch (Exception ex) {
+            out.println("delete1(): " + ex.toString());
+        } finally {
+            userAccts.leaveCriticalSection();
+        }
+
+
+    }
+
+    /**
+     * Need to use graph store. Getting the user accounts OntModel (or
+     * userAccts.getGraph()) = error.
+     *
+     * @param request
+     * @param out
+     */
+    protected void delete(HttpServletRequest request, PrintWriter out) {
+        StringBuffer queryString = new StringBuffer();
+        queryString.append("PREFIX  loc:  <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> \n");
+        queryString.append("CONSTRUCT \n");
+        queryString.append("  { <http://vivo.stonybrook.edu/individual/u2315> loc:hasWebidAssociation ?ass . \n");
+        queryString.append("    ?ass ?pp ?oo \n");
+        queryString.append("  } \n");
+        queryString.append("WHERE \n");
+        queryString.append("  { <http://vivo.stonybrook.edu/individual/u2315> loc:hasWebidAssociation ?ass . \n");
+        queryString.append("    ?ass ?pp ?oo \n");
+        queryString.append("  } \n");
+
+        out.println(new java.util.Date() + " DELETE");
+        out.println("<p>");
+        out.println(queryString);
+        out.println("</p>");
+
+        RDFService rdfService = this.vreq.getRDFService();
+        Model toRemove = ModelFactory.createDefaultModel();
+        String fmQuery = queryString.toString();
+        try {
+            toRemove.read(rdfService.sparqlConstructQuery(fmQuery, RDFService.ModelSerializationFormat.RDFXML), null);
+        } catch (RDFServiceException ex) {
+            out.println("<p>");
+            out.println(ex.toString());
+            out.println("</p>");
+
+        }
+
+        ByteArrayOutputStream outRemove = new ByteArrayOutputStream();
+        toRemove.write(outRemove);
+        InputStream inRemove = new ByteArrayInputStream(outRemove.toByteArray());
+        ChangeSet removeChangeSet = rdfService.manufactureChangeSet();
+        removeChangeSet.addRemoval(inRemove, RDFService.ModelSerializationFormat.RDFXML, JenaDataSourceSetupBase.JENA_USER_ACCOUNTS_MODEL);//.JENA_DB_MODEL);
+        try {
+            rdfService.changeSetUpdate(removeChangeSet);
+        } catch (RDFServiceException ex) {
+            out.println("<p>");
+            out.println(ex.toString());
+            out.println("</p>");
+        }
+
 
     }
 
@@ -210,7 +328,7 @@ public class tdexp extends HttpServlet {
              sb.append("PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n");
              sb.append("PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n");
              sb.append("PREFIX rdfs: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n");
-             sb.append("INSERT DATA INTO <" + NAMED_GRAPH + ">\n");
+             sb.append("INSERT DATA INTO <" + PUBLIC_GRAPH + ">\n");
              sb.append("{ \n");
              sb.append("<http://larry.example/profile#me> a foaf:Person;\n");
              sb.append("foaf:name \"Larry\";\n");
@@ -241,11 +359,11 @@ public class tdexp extends HttpServlet {
                 System.out.println(ex.toString());
             }
             System.out.println("importing...");
-            //im.read(is,"" + NAMED_GRAPH + "", "TTL");
+            //im.read(is,"" + PUBLIC_GRAPH + "", "TTL");
             im.read(is, null, "TTL");
             im.write(System.out, "TTL");
             System.out.println("adding triples to kb 2...");
-            Model e = dataset.getNamedModel(NAMED_GRAPH);
+            Model e = dataset.getNamedModel(PUBLIC_GRAPH);
             e.add(im);
             //UpdateAction.parseExecute(sb.toString(), this.ontModel);
             // UpdateAction.parseExecute(sb.toString(), graphStore);
@@ -381,7 +499,7 @@ public class tdexp extends HttpServlet {
 
             StringBuffer sb = new StringBuffer();
             sb.append("INSERT DATA ");
-            sb.append("{ GRAPH <" + NAMED_GRAPH + "> ");
+            sb.append("{ GRAPH <" + PUBLIC_GRAPH + "> ");
             //sb.append("{ <" + BASE + "n1559> <http://xmlns.com/foaf/0.1/knows>  <" + BASE + "n1431> . }");
             sb.append("{ <" + BASE + "n1559> <http://xmlns.com/foaf/0.1/name>  \"delta\"^^<http://www.w3.org/2001/XMLSchema#string> . }");
             sb.append("}");
@@ -391,6 +509,126 @@ public class tdexp extends HttpServlet {
         } catch (Exception ex) {
             System.out.println("arqUpdate(): " + ex.toString());
         }
+
+    }
+
+    protected void arqDelete(PrintWriter out) {
+
+        Dataset dataset = this.vreq.getDataset();
+        GraphStore graphStore = GraphStoreFactory.create(dataset);
+
+        StringBuffer sb = new StringBuffer();
+
+        //
+
+        // WORKS ON MAIN GRAPH
+            /*
+         sb.append("DELETE { \n");
+         sb.append("  GRAPH <" + PUBLIC_GRAPH + "> { \n");
+         sb.append("    <http://vivo.stonybrook.edu/individual/n1431> <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#hasWebIDAssociation> <http://vivo.stonybrook.edu/individual/n884392184> . \n");
+         sb.append("  } \n");
+         sb.append("} \n");
+         sb.append("USING <" + PUBLIC_GRAPH + "> \n");
+         sb.append("WHERE \n");
+         sb.append("  { <http://vivo.stonybrook.edu/individual/n1431> <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#hasWebIDAssociation> <http://vivo.stonybrook.edu/individual/n884392184> } \n");
+         */
+
+        // USER ACCOUNTS GRAPH DID NOT WORK
+            /*
+         sb.append("DELETE { \n");
+         sb.append("  GRAPH <http://vitro.mannlib.cornell.edu/default/vitro-kb-userAccounts> { \n");
+         sb.append("    <http://vivo.stonybrook.edu/individual/u2315> <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#hasWebIDAssociation> ?var . \n");
+         sb.append("  } \n");
+         sb.append("} \n");
+         sb.append("USING <http://vitro.mannlib.cornell.edu/default/vitro-kb-userAccounts> \n");
+         sb.append("WHERE \n");
+         sb.append("  { <http://vivo.stonybrook.edu/individual/u2315> <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#hasWebIDAssociation> ?var } \n");
+         */
+
+        // DELETE & INSERT DIDN'T WORK:
+        // "Graph selection from the dataset not supported - ignored"
+        // DELETE { GRAPH <g1> { a b c } } INSERT { GRAPH <g1> { x y z } } USING <g1> WHERE { ... }
+
+        /*
+         sb.append("prefix xsd: <http://www.w3.org/2001/XMLSchema#string> \n");
+         sb.append("prefix loc: <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> \n");
+         sb.append("PREFIX g:  <http://vitro.mannlib.cornell.edu/default/> \n");
+         sb.append("DELETE { \n");
+         sb.append("GRAPH g:vitro-kb-userAccounts { \n");
+         sb.append("<http://vivo.stonybrook.edu/individual/u2315> loc:emailAddress \"tammy.diprima@stonybrook.edu\"^^xsd:string  } } \n");
+
+         sb.append("INSERT { \n");
+         sb.append("GRAPH g:vitro-kb-userAccounts { \n");
+         sb.append("<http://vivo.stonybrook.edu/individual/u2315> loc:emailAddress \"tammy@yabbadabbadoo.edu\"^^xsd:string  } } \n");
+
+         sb.append("USING g:vitro-kb-userAccounts \n");
+
+         sb.append("WHERE { \n");
+         sb.append("<http://vivo.stonybrook.edu/individual/u2315> loc:emailAddress \"tammy.diprima@stonybrook.edu\"^^xsd:string } \n");
+
+
+         out.println("<p>Using vitro-kb-userAccounts.<br>");
+         out.println(sb.toString());
+         out.println("</p><p>");
+         out.println(graphStore.getDefaultGraph().toString());
+         out.println("</p>");
+
+         UpdateAction.parseExecute(sb.toString(), graphStore);
+         */
+
+
+        // THIS JUST MADE VIVO CRAP OUT.
+            /*
+         sb.append("@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> . \n");
+         sb.append("@prefix cert:    <http://www.w3.org/ns/auth/cert#> . \n");
+         sb.append("@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> . \n");
+         sb.append("<http://vivo.stonybrook.edu/individual/u2315> \n");
+         sb.append("      <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#hasWebIDAssociation> \n");
+         sb.append("              [ rdfs:label \"home\" ; \n");
+         sb.append("                <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#hasWebID> \n");
+         sb.append("                        <http://vivo.stonybrook.edu/individual/n1431> ; \n");
+         sb.append("                <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#localHosted> \n");
+         sb.append("                        \"true\"^^xsd:boolean ; \n");
+         sb.append("                <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#me> \n");
+         sb.append("                        \"true\"^^xsd:boolean ; \n");
+         sb.append("                cert:key \n");
+         sb.append("                        [ a       cert:RSAPublicKey ; \n");
+         sb.append("                          cert:exponent 65537 ; \n");
+         sb.append("                          cert:modulus \"cb84bb1d884348cc315c177602752874a9e6286077f4dfa3ed3f8344b01598eb203b233a456dedfbb14bbc92bcf22bdf568d912dc86f7adf9b85d8060d07f4ce797753d54a9a954c2cca12d464f5076acd05bcc989bda8f914c1b6c9030702a7d21db6efb199910843bd19373ab1abc2de634cbeee4b0d2ca4e421b6adb461bfdd6f9ce5be7e31de6f6e2fc515e4c51de53467de84237bd803bacea676c2fee8afabc5025815268cd16db2f7fbf42bdb888e95a9afa0c10855cd7bf5e212e8bbfaba943747f3aa4e7aa5ec93242cbdd680e6707588472cc1a36ac365c5cb10a3cbc1c920f6c3ac2c513cee15a41210ef21284ac3116da7a1ea5fda4734559353\"^^xsd:hexBinary \n");
+         sb.append("                        ] \n");
+         sb.append("              ] . \n");
+
+         */
+
+        OntModelSelector ontModelSelector = ModelContext.getOntModelSelector(getServletContext());
+        OntModel userAccts = ontModelSelector.getUserAccountsModel();
+        List blah = userAccts.getSubGraphs();
+        out.println(blah.toString());
+        out.println("<br>");
+        out.println(blah.toArray());
+
+
+
+        /*
+         userAccts.enterCriticalSection(Lock.WRITE);
+         try {
+         InputStream is = null;
+         try {
+         is = new ByteArrayInputStream(sb.toString().getBytes("UTF-8"));
+         } catch (UnsupportedEncodingException ex) {
+         out.println(ex.toString());
+         }
+         Model im = ModelFactory.createDefaultModel();
+         im.read(is, null, "TTL");
+         im.write(out, "TTL");
+
+         userAccts.remove(im);
+
+         } catch (Exception ex) {
+         out.println("<br>arqDelete(): " + ex.toString());
+         out.println("<br>");
+         ex.printStackTrace(out);
+         }*/
 
     }
 
@@ -541,7 +779,7 @@ public class tdexp extends HttpServlet {
 
         try {
             Dataset ds = this.vreq.getDataset();
-            Model m = ds.getNamedModel(NAMED_GRAPH);//ds.getDefaultModel();
+            Model m = ds.getNamedModel(PUBLIC_GRAPH);//ds.getDefaultModel();
             m.enterCriticalSection(Lock.WRITE);
 
             try {
