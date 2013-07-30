@@ -94,53 +94,80 @@ public class tdexp extends HttpServlet {
     protected void delete1(PrintWriter out) throws ServletException, IOException {
 
         StringBuffer queryString = new StringBuffer();
+        
+        queryString.append("PREFIX  loc:  <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> \n");
+        queryString.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#> \n");
+        queryString.append("DELETE \n");
+        queryString.append("{ <http://vivo.stonybrook.edu/individual/u2315> loc:hasWebIDAssociation ?assoc . \n");
+        queryString.append("    ?assoc ?p ?o . \n");
+        queryString.append("    ?assoc cert:key ?akey . \n");
+        queryString.append("    ?akey ?pp ?oo . \n");
+        queryString.append("}\n");        
+        queryString.append("WHERE \n");
+        queryString.append("{ <http://vivo.stonybrook.edu/individual/u2315> loc:hasWebIDAssociation ?assoc . \n");
+        queryString.append("    ?assoc ?p ?o . \n");
+        queryString.append(" OPTIONAL { ?assoc cert:key ?akey . \n"); 
+        queryString.append("    ?akey ?pp ?oo . } \n");
+        queryString.append("}\n");         
 
         // deleted too much!
-        queryString.append("PREFIX  loc:  <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> \n");
-        queryString.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#> \n");
-        queryString.append("DELETE \n");
-        queryString.append("WHERE \n");
-        queryString.append("  { <http://vivo.stonybrook.edu/individual/u2315> loc:hasWebIDAssociation ?assoc . \n");
-        //queryString.append("    ?assoc loc:hasUUID ?uuid .\n");
-        queryString.append("    ?assoc ?p ?o . \n");
-        queryString.append("    ?assoc cert:key ?key . \n");
-        queryString.append("    ?key ?pp ?oo . \n");
-        queryString.append("  } \n");
-        
+        /*
+         queryString.append("PREFIX  loc:  <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> \n");
+         queryString.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#> \n");
+         queryString.append("DELETE \n");
+         queryString.append("WHERE \n");
+         queryString.append("  { <http://vivo.stonybrook.edu/individual/u2315> loc:hasWebIDAssociation ?assoc . \n");
+         //queryString.append("    ?assoc loc:hasUUID ?uuid .\n");
+         queryString.append("    ?assoc ?p ?o . \n");
+         queryString.append("    ?assoc cert:key ?key . \n");
+         queryString.append("    ?key ?pp ?oo . \n");
+         queryString.append("  } \n");*/
+
+        /*
+        queryString.append("PREFIX  loc:  <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> ");
+        queryString.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#> ");
+        queryString.append("DELETE ");
+        queryString.append("WHERE ");
+        queryString.append("{ <http://vivo.stonybrook.edu/individual/u2315> loc:hasWebIDAssociation ?assoc . ");
+        queryString.append("    ?assoc ?p ?o . ");
+        queryString.append("    ?assoc cert:key ?akey . ");
+        queryString.append("    ?akey ?pp ?oo . ");
+        queryString.append("}");*/
+
         // This deletes everything up to, but not including, the public key:
         /*
-        queryString.append("PREFIX  loc:  <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> \n");
-        queryString.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#> \n");
-        queryString.append("DELETE \n");
-        queryString.append("WHERE \n");
-        queryString.append("  { <http://vivo.stonybrook.edu/individual/u2315> loc:hasWebIDAssociation ?bnode1 . \n");
-        queryString.append("    ?bnode1 ?p ?o .\n");
-        queryString.append("    ?bnode1 cert:key ?bnode2 . \n");
-        queryString.append("    ?bnode2 ?pp ?oo .\n");
-        queryString.append("  } \n");
-        */
+         queryString.append("PREFIX  loc:  <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> \n");
+         queryString.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#> \n");
+         queryString.append("DELETE \n");
+         queryString.append("WHERE \n");
+         queryString.append("  { <http://vivo.stonybrook.edu/individual/u2315> loc:hasWebIDAssociation ?bnode1 . \n");
+         queryString.append("    ?bnode1 ?p ?o .\n");
+         queryString.append("    ?bnode1 cert:key ?bnode2 . \n");
+         queryString.append("    ?bnode2 ?pp ?oo .\n");
+         queryString.append("  } \n");
+         */
 
         // you can't use OPTIONAL with DELETE WHERE
         /*
-        queryString.append("PREFIX  loc:  <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> \n");
-        queryString.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#> \n");
-        queryString.append("DELETE { \n");
-        queryString.append("GRAPH ?graph { ");
-        queryString.append("  <http://vivo.stonybrook.edu/individual/u2315> loc:hasWebIDAssociation ?bnode . \n");
-        queryString.append("    ?bnode ?p ?o .\n");
-        queryString.append("    ?bnode cert:key ?key . \n");
-        queryString.append("    ?key ?ppp ?ooo . \n");
-        queryString.append("  } }\n");        
-        queryString.append("WHERE { \n");
-        queryString.append("GRAPH ?graph { ");
-        queryString.append("  <http://vivo.stonybrook.edu/individual/u2315> loc:hasWebIDAssociation ?bnode . \n");
-        queryString.append("    ?bnode ?p ?o .\n");
-        queryString.append("    optional { ?bnode cert:key ?key . \n");
-        queryString.append("    { ?key ?ppp ?ooo . } }  \n");
-        queryString.append("  } } \n");
-        */
-       
-        
+         queryString.append("PREFIX  loc:  <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> \n");
+         queryString.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#> \n");
+         queryString.append("DELETE { \n");
+         queryString.append("GRAPH ?graph { ");
+         queryString.append("  <http://vivo.stonybrook.edu/individual/u2315> loc:hasWebIDAssociation ?bnode . \n");
+         queryString.append("    ?bnode ?p ?o .\n");
+         queryString.append("    ?bnode cert:key ?key . \n");
+         queryString.append("    ?key ?ppp ?ooo . \n");
+         queryString.append("  } }\n");        
+         queryString.append("WHERE { \n");
+         queryString.append("GRAPH ?graph { ");
+         queryString.append("  <http://vivo.stonybrook.edu/individual/u2315> loc:hasWebIDAssociation ?bnode . \n");
+         queryString.append("    ?bnode ?p ?o .\n");
+         queryString.append("    optional { ?bnode cert:key ?key . \n");
+         queryString.append("    { ?key ?ppp ?ooo . } }  \n");
+         queryString.append("  } } \n");
+         */
+
+
         out.println("<pre>" + queryString.toString() + "</pre>");
 
         OntModelSelector ontModelSelector = ModelContext.getOntModelSelector(getServletContext());
