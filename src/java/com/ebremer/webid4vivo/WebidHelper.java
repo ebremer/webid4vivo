@@ -10,6 +10,7 @@ import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.shared.Lock;
+import com.hp.hpl.jena.update.UpdateAction;
 import edu.cornell.mannlib.vedit.beans.LoginStatusBean;
 import edu.cornell.mannlib.vitro.webapp.beans.UserAccount;
 import edu.cornell.mannlib.vitro.webapp.controller.VitroRequest;
@@ -19,6 +20,7 @@ import edu.cornell.mannlib.vitro.webapp.dao.WebappDaoFactory;
 import edu.cornell.mannlib.vitro.webapp.dao.jena.ModelContext;
 import edu.cornell.mannlib.vitro.webapp.dao.jena.OntModelSelector;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
@@ -161,12 +163,13 @@ public class WebidHelper {
         ServletContext ctx = session.getServletContext();
         OntModelSelector ontModelSelector = ModelContext.getOntModelSelector(ctx);
         OntModel model = null;
-        
-        if (acctsModel)
+
+        if (acctsModel) {
             model = ontModelSelector.getUserAccountsModel();
-        else
+        } else {
             model = ontModelSelector.getABoxModel();
-        
+        }
+
         model.enterCriticalSection(Lock.WRITE);
         try {
             /* avoiding blank node issue for now.... */
@@ -178,18 +181,19 @@ public class WebidHelper {
             }
             Model im = ModelFactory.createDefaultModel();
             im.read(is, null, "TTL");
-            
-            String whichModel = "";
-            
-            if (acctsModel)
+
+            String whichModel;
+
+            if (acctsModel) {
                 whichModel = "Accounts Model";
-            else
+            } else {
                 whichModel = "Public ABox Model";
-            
+            }
+
             System.out.println(new java.util.Date() + " adding record to " + whichModel);
             im.write(System.out, "TTL");
             model.add(im);
-            
+
         } catch (Exception ex) {
             System.out.println("addIt(): " + ex.toString());
         } finally {
@@ -208,13 +212,13 @@ public class WebidHelper {
         UserAccount userAccount = getCurrentUserAccount(request);
 
         StringBuffer sb = new StringBuffer();
-        
+
         UUID rand = UUID.randomUUID();
         String webidAssocURI = "http://vivo.stonybrook.edu/individual/n" + rand;
-        
+
         rand = UUID.randomUUID();
-        String uuid = "http://vivo.stonybrook.edu/individual/n" + rand;        
-        
+        String uuid = "http://vivo.stonybrook.edu/individual/n" + rand;
+
         sb.append("@prefix auth: <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> .\n");
         sb.append("@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n");
         sb.append("<");
@@ -226,7 +230,7 @@ public class WebidHelper {
         sb.append("> .\n");
         sb.append("<");
         sb.append(webidAssocURI);
-        sb.append("> ");         
+        sb.append("> ");
         sb.append(" auth:hasWebID ");
         sb.append("<");
         sb.append(request.getParameter("txtWebId"));
@@ -234,16 +238,13 @@ public class WebidHelper {
         sb.append(" auth:hasUUID ");
         sb.append("<");
         sb.append(uuid);
-        sb.append("> ;\n");        
+        sb.append("> ;\n");
         sb.append("auth:localHosted false ;\n");
         sb.append("auth:me true ;\n");
         sb.append("rdfs:label \"remote\" . \n");
-        
+
         addIt(request, sb.toString(), true);
-        
-        StringBuffer str = new StringBuffer();
-        String uri = request.getParameter("txtWebId");
-        
+
     }
 
     /**
@@ -262,15 +263,15 @@ public class WebidHelper {
 
         StringBuffer sb = new StringBuffer();
         String webid = request.getParameter("webid");
-        
+
         UUID rand = UUID.randomUUID();
         String webidAssocURI = "http://vivo.stonybrook.edu/individual/n" + rand;
-        
+
         rand = UUID.randomUUID();
         String uuid = "http://vivo.stonybrook.edu/individual/n" + rand;
 
         rand = UUID.randomUUID();
-        String key = "http://vivo.stonybrook.edu/individual/n" + rand;        
+        String key = "http://vivo.stonybrook.edu/individual/n" + rand;
 
         sb.append("@prefix cert: <http://www.w3.org/ns/auth/cert#> .\n");
         sb.append("@prefix auth: <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> .\n");
@@ -284,7 +285,7 @@ public class WebidHelper {
         sb.append("> .\n");
         sb.append("<");
         sb.append(webidAssocURI);
-        sb.append("> ");          
+        sb.append("> ");
         sb.append(" auth:hasWebID ");
         sb.append("<");
         sb.append(webid);
@@ -295,14 +296,14 @@ public class WebidHelper {
         sb.append(" auth:hasUUID ");
         sb.append("<");
         sb.append(uuid);
-        sb.append("> ;\n");         
+        sb.append("> ;\n");
         sb.append(" cert:key ");
         sb.append("<");
         sb.append(key);
         sb.append("> .\n");
         sb.append("<");
         sb.append(key);
-        sb.append("> ");          
+        sb.append("> ");
         sb.append(" a cert:RSAPublicKey ;\n");
         sb.append(" cert:exponent ");
         sb.append(exponent);
@@ -313,10 +314,10 @@ public class WebidHelper {
 
 
         addIt(request, sb.toString(), true);
-        
+
         StringBuffer str = new StringBuffer();
 
-        
+
         str.append("@prefix cert: <http://www.w3.org/ns/auth/cert#> .\n");
         str.append("@prefix auth: <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> .\n");
         str.append("@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n");
@@ -329,7 +330,7 @@ public class WebidHelper {
         str.append("> .\n");
         str.append("<");
         str.append(key);
-        str.append("> ");          
+        str.append("> ");
         str.append(" a cert:RSAPublicKey ;\n");
         str.append(" cert:exponent ");
         str.append(exponent);
@@ -373,9 +374,9 @@ public class WebidHelper {
         System.out.println(queryString);
 
         ArrayList<WebIDAssociation> webidList = new ArrayList();
-        
+
         com.hp.hpl.jena.query.Query query = QueryFactory.create(queryString.toString());
-        
+
         HttpSession session = ((HttpServletRequest) request).getSession(false);
         ServletContext ctx = session.getServletContext();
         OntModelSelector ontModelSelector = ModelContext.getOntModelSelector(ctx);
@@ -389,21 +390,13 @@ public class WebidHelper {
 
             ResultSet results = qe.execSelect();
             for (; results.hasNext();) {
-                
+
                 QuerySolution q = results.nextSolution();
                 boolean me = q.getLiteral("me").getBoolean();
                 String webid = (String) q.getResource("webid").getURI();
                 boolean localHosted = q.getLiteral("localHosted").getBoolean();
                 String label = q.getLiteral("label").getString();
-                String uuid = "";
-                try
-                {
-                    uuid = q.getLiteral("uuid").getString();
-                }
-                catch(Exception ex)
-                {
-                    //don't care right now.
-                }
+                String uuid = (String) q.getResource("uuid").getURI();
 
                 webidList.add(new WebIDAssociation(me, webid, localHosted, label, uuid));
 
@@ -411,8 +404,7 @@ public class WebidHelper {
                 //out.println("<tr><td>" + really.getString() + "</td><td>Self-Edit</td></tr>");
             }
             qe.close();
-        } 
-        finally {
+        } finally {
             // Releases the lock from the matching enterCriticalSection.
             userAccts.leaveCriticalSection();
             //aboxModel.close();
@@ -503,6 +495,104 @@ public class WebidHelper {
         sb.append("</body>");
         sb.append("</html>");
         return sb.toString();
+    }
+
+    /**
+     * Delete selected webids.
+     *
+     * @param request
+     * @throws IOException
+     */
+    protected void delete(HttpServletRequest request) throws IOException {
+
+        VitroRequest vreq = new VitroRequest(request);
+        UserAccount userAccount = LoginStatusBean.getCurrentUser(vreq);
+        String userUri = userAccount.getUri();
+
+        HttpSession session = ((HttpServletRequest) request).getSession(false);
+        ServletContext ctx = session.getServletContext();
+        OntModelSelector ontModelSelector = ModelContext.getOntModelSelector(ctx);
+
+        OntModel userAccts = ontModelSelector.getUserAccountsModel();
+        OntModel aboxModel = ontModelSelector.getABoxModel();        
+
+        // Get the IDs to delete
+        String toDelete[] = request.getParameterValues("id");
+        if (toDelete != null) {
+
+            // Loop through and delete them
+            for (int i = 0; i < toDelete.length; i++) {
+
+                StringBuffer queryString = new StringBuffer();
+                queryString.append("PREFIX  loc:  <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> \n");
+                queryString.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#> \n");
+                queryString.append("DELETE \n");
+                queryString.append("{ <");
+                queryString.append(userUri);
+                queryString.append("> loc:hasWebIDAssociation ?assoc . \n");
+                queryString.append("    ?assoc loc:hasUUID <");
+                queryString.append(toDelete[i]);
+                queryString.append("> . \n");
+                queryString.append("    ?assoc ?p ?o . \n");
+                queryString.append("    ?assoc cert:key ?akey . \n");
+                queryString.append("    ?akey ?pp ?oo . \n");
+                queryString.append("}\n");
+                queryString.append("WHERE \n");
+                queryString.append("{ <");
+                queryString.append(userUri);
+                queryString.append("> loc:hasWebIDAssociation ?assoc . \n");
+                queryString.append("    ?assoc loc:hasUUID <");
+                queryString.append(toDelete[i]);
+                queryString.append("> . \n");
+                queryString.append("    ?assoc ?p ?o . \n");
+                queryString.append(" OPTIONAL { ?assoc cert:key ?akey . \n");
+                queryString.append("    ?akey ?pp ?oo . } \n");
+                queryString.append("}\n");
+
+                System.out.println("Delete:\n" + queryString.toString());
+
+                userAccts.enterCriticalSection(Lock.WRITE);
+                try {
+                    UpdateAction.parseExecute(queryString.toString(), userAccts);
+
+                } catch (Exception ex) {
+                    System.out.println("delete(): " + ex.toString());
+                } finally {
+                    userAccts.leaveCriticalSection();
+                }
+
+                queryString = new StringBuffer();
+                queryString.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#> \n");
+                queryString.append("DELETE {");
+                queryString.append("?s cert:key <");
+                queryString.append(toDelete[i]);
+                queryString.append("> . \n<");
+                queryString.append(toDelete[i]);
+                queryString.append("> ?p ?o . \n");
+                queryString.append("} \n");
+                queryString.append("WHERE { \n");
+                queryString.append("?s cert:key <");
+                queryString.append(toDelete[i]);
+                queryString.append("> . \n<");
+                queryString.append(toDelete[i]);
+                queryString.append("> ?p ?o . \n");
+                queryString.append("} \n");
+                
+                System.out.println("Delete:\n" + queryString.toString());
+
+                aboxModel.enterCriticalSection(Lock.WRITE);
+                try {
+                    UpdateAction.parseExecute(queryString.toString(), aboxModel);
+
+                } catch (Exception ex) {
+                    System.out.println("Delete: " + ex.toString());
+                } finally {
+                    aboxModel.leaveCriticalSection();
+                }                
+
+            }
+        }
+
     }
 
     /**

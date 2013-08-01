@@ -12,6 +12,8 @@ import java.util.logging.Logger;
 import javax.servlet.http.HttpServlet;
 
 public class WebidController extends HttpServlet {
+    
+    private final String path = "torrini";
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -90,20 +92,20 @@ public class WebidController extends HttpServlet {
                 found = false;
             }
 
-            String path = "torrini";
+            
             out.println("<h3>Manage your WebID's!</h3>");
             if (!found) {
                 // Question: So how did you get in, in the first place?  Answer: Logged in with NetID.
                 out.println("Click <a href=\"" + path + "?3\" target=\"addwin\">Add</a> to associate an existing external WebID.<br>");
-                out.println("Or click <a href=\"ebexp\" target=\"ebexpwin\">Create</a> to create a new WebID.");
+                out.println("Or click <a href=\"ebexp\">Create</a> to create a new WebID.");
             } else {
+                out.println("<form method=\"post\">");
                 out.println("<table border=\"0\" width=\"60%\">");
                 out.println("<tr><td><a href=\"" + path + "?3\" target=\"addwin\">Add</a></td>");
-                out.println("<td>&nbsp;</td><td>&nbsp;</td>");
+                out.println("<td colspan=\"3\">&nbsp;</td>");
                 out.println("<td><a href=\"ebexp\" target=\"ebexpwin\">Create</a></td></tr>");
-                out.println("<tr><td colspan=\"2\"><b><u>Webids currently associated with your profile:</u></b></td></tr>");
+                out.println("<tr><td colspan=\"5\"><b><u>Webids currently associated with your profile:</u></b></td></tr>");
                 out.println("<tr><td><b>WebID</b></td><td><b>Label</b></td><td><b>Me</b></td><td><b>Local-Hosted</b></td><td><b>Delete</b></td></tr>");
-                //out.println("<tr><td colspan=\"2\"><b>WebID</b></td></tr>");
 
                 Iterator it = webidList.iterator();
                 while (it.hasNext()) {
@@ -113,10 +115,16 @@ public class WebidController extends HttpServlet {
                     out.println("<td>" + bean.getLabel() + "</td>");
                     out.println("<td>" + bean.isMe() + "</td>");
                     out.println("<td>" + bean.isLocalHosted() + "</td>");
-                    out.println("<td><input type=checkbox name=id value=\"" + bean.getUuid() + "\"></td>");
+                    out.println("<td><input type=\"checkbox\" name=\"id\" value=\"" + bean.getUuid() + "\"></td>");
                     out.println("</tr>");
                 }
+                out.println("<tr>");
+                out.println("<td><input type=\"submit\" value=\"Submit\" name=\"manage\">&nbsp;&nbsp;&nbsp;");
+                out.println("<button type=\"reset\">Clear Checkboxes</button></td>");
+                out.println("<td colspan=\"4\">&nbsp;</td>");
+                out.println("</tr>");
                 out.println("</table>");
+                out.println("</form>");
 
             }
 
@@ -174,7 +182,7 @@ public class WebidController extends HttpServlet {
             sb.append("            <td>&nbsp;");
             sb.append("            </td>");
             sb.append("            <td>\n");
-            sb.append("	            <input type=\"submit\" value=\"Submit\">\n");
+            sb.append("	            <input type=\"submit\" value=\"Submit\" name=\"add\">\n");
             sb.append("	            <button type=\"button\" value=\"Cancel\" onClick=\"window.close();\">Cancel</button>\n");
             sb.append("            </td>\n");
             sb.append("        </tr>\n");
@@ -226,8 +234,16 @@ public class WebidController extends HttpServlet {
         try {
             out = response.getWriter();
             WebidHelper x = new WebidHelper();
-            x.updateVivoWithExternalWebid(request);
-            out.println(x.getCloseAndRefresh());
+
+            String form = request.getParameter("manage");
+
+            if (form != null) {
+                x.delete(request);
+                response.sendRedirect("/" + path + "?2");
+            } else {
+                x.updateVivoWithExternalWebid(request);
+                out.println(x.getCloseAndRefresh());
+            }
 
         } finally {
             out.close();
