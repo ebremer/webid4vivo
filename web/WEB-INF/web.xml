@@ -1,21 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app version="3.0" xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd">
     <servlet>
+        <servlet-name>gollum</servlet-name>
+        <servlet-class>com.ebremer.webid4vivo.auth</servlet-class>
+    </servlet>    
+    <servlet>
+        <servlet-name>torrini</servlet-name>
+        <servlet-class>com.ebremer.webid4vivo.WebidController</servlet-class>
+    </servlet>    
+    <servlet>
         <servlet-name>ebexp</servlet-name>
         <servlet-class>com.ebremer.webid4vivo.ebexp</servlet-class>
-    </servlet>
-    <servlet>
-        <servlet-name>Gollum</servlet-name>
-        <servlet-class>com.ebremer.webid4vivo.Gollum</servlet-class>
-    </servlet>
+    </servlet>         
+
+    <servlet-mapping>
+        <servlet-name>gollum</servlet-name>
+        <url-pattern>/gollum</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>torrini</servlet-name>
+        <url-pattern>/torrini</url-pattern>
+    </servlet-mapping>    
     <servlet-mapping>
         <servlet-name>ebexp</servlet-name>
         <url-pattern>/ebexp</url-pattern>
-    </servlet-mapping>
-    <servlet-mapping>
-        <servlet-name>Gollum</servlet-name>
-        <url-pattern>/Gollum</url-pattern>
-    </servlet-mapping>
+    </servlet-mapping> 
+
     <session-config>
         <session-timeout>
             30
