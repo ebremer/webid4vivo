@@ -1,7 +1,8 @@
 package com.ebremer.webid4vivo;
 
 /**
- *
+ * WebID bean.
+ * 
  * @author Erich Bremer
  * @author Tammy DiPrima
  */
@@ -24,6 +25,8 @@ import java.util.List;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 public class webid {
 
@@ -32,7 +35,8 @@ public class webid {
     private String uri = null;
     private String modulus = null;
     private String exponent = null;
-    private Model model = null;    
+    private Model model = null;
+    private static final Log log = LogFactory.getLog(webid.class);
     
 
     webid(X509Certificate cert) {
@@ -45,7 +49,7 @@ public class webid {
         try {
             altnames = cert.getSubjectAlternativeNames();
         } catch (CertificateParsingException ex) {
-            System.out.println(ex.toString());
+            log.error(ex);
         }
 
         Iterator itAltNames = altnames.iterator();
@@ -68,8 +72,8 @@ public class webid {
         boolean result = false;
         String namespace = new WebidHelper().getNamespace(request);
         StringBuffer sb = new StringBuffer();
+        sb.append("PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#> \n");
         sb.append("PREFIX cert: <http://www.w3.org/ns/auth/cert#> \n");
-        sb.append("PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> \n");
         sb.append("PREFIX auth: <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> \n");
 
         if (uri.contains(namespace)) {
@@ -86,9 +90,6 @@ public class webid {
             sb.append(exponent);
             sb.append("; ] ] . }");
             
-            System.out.println(new java.util.Date() + " VERIFY");
-            System.out.println(sb.toString());            
-            
             HttpSession session = ((HttpServletRequest) request).getSession(false);
             ServletContext ctx = session.getServletContext();
             OntModelSelector ontModelSelector = ModelContext.getOntModelSelector(ctx);
@@ -104,8 +105,7 @@ public class webid {
                 result = qe.execAsk();
                 qe.close();
             } catch (Exception ex) {
-                System.out.println("ask failed");
-                System.out.println(ex.toString());
+                log.error(ex);
             } finally {
                 userAccts.leaveCriticalSection();
             }
@@ -120,9 +120,6 @@ public class webid {
             sb.append("cert:exponent ");
             sb.append(exponent);
             sb.append("; ] . }");
-
-            System.out.println(new java.util.Date() + " VERIFY");
-            System.out.println(sb.toString());
 
             model = ModelFactory.createDefaultModel();
             model.read(uri, "RDF/XML");

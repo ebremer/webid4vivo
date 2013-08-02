@@ -55,8 +55,10 @@ import org.bouncycastle.util.encoders.Base64;
 import sun.security.provider.SecureRandom;
 
 /**
- *
- * @author erich
+ * Handles WebID generation.
+ * 
+ * @author Erich Bremer
+ * @author tammydiprima
  */
 public class ebexp extends HttpServlet {
 
@@ -136,7 +138,7 @@ public class ebexp extends HttpServlet {
             }
 
         } else {
-            System.out.println("Somehow, the user is null.");
+            Logger.getLogger(ebexp.class.getName()).log(Level.SEVERE, "Null user.");
         }
 
     }
@@ -199,15 +201,11 @@ public class ebexp extends HttpServlet {
         nb.addRDN(BCStyle.O, "WebID4VIVO");
         nb.addRDN(BCStyle.OU, "The Community Of Self Signers");
 
-        // The VIVO data URI is fed in here
-        //nb.addRDN(BCStyle.UID, webid);
-
-        // User Account Uri
+        // The VIVO User Account URI is fed in here
         WebidHelper x = new WebidHelper();
         nb.addRDN(BCStyle.UID, x.getCurrentUserAccount(request).getUri());
 
-        // We need to decide what will go here since this is exposed when user select WebID in browser
-        
+        // This is exposed when user selects WebID in browser
         StringBuffer sb = new StringBuffer();
         sb.append(first.trim());
         sb.append(" ");
@@ -272,6 +270,7 @@ public class ebexp extends HttpServlet {
 
         // OK WE'RE DONE CREATING THE CERT! UPDATE VIVO.
         x.updateVivoWithGeneratedWebid(request, theCert);
+        //x.updateVivoWith_BLANKNODE(request, theCert);
 
         // Finally, send WebID certificate to client
         try {
@@ -281,7 +280,6 @@ public class ebexp extends HttpServlet {
             pemWriter.close();
             byte[] ser = sw.toString().getBytes("UTF-8");
             out.write(ser);
-            //response.sendRedirect("/torrini?2");
 
         } finally {
             out.close();
@@ -295,7 +293,6 @@ public class ebexp extends HttpServlet {
     public void init(ServletConfig config) throws ServletException {
         if (keypair == null) {
             try {
-                System.out.println("initializing webid4vivo...");
                 KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
                 keyGen.initialize(2048);
                 byte[] publicKey = keyGen.genKeyPair().getPublic().getEncoded();
@@ -304,7 +301,6 @@ public class ebexp extends HttpServlet {
                 for (int i = 0; i < publicKey.length; ++i) {
                     retString.append(Integer.toHexString(0x0100 + (publicKey[i] & 0x00FF)).substring(1));
                 }
-                System.out.println(retString);
             } catch (NoSuchAlgorithmException ex) {
                 Logger.getLogger(ebexp.class.getName()).log(Level.SEVERE, null, ex);
             }

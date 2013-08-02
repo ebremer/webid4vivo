@@ -7,13 +7,20 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.http.HttpServlet;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
+/**
+ * Handles requests for WebID.
+ * 
+ * @author Erich Bremer
+ * @author tammydiprima
+ */
 public class WebidController extends HttpServlet {
     
     private final String path = "torrini";
+    private static final Log log = LogFactory.getLog(WebidController.class);
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -93,23 +100,34 @@ public class WebidController extends HttpServlet {
             }
 
             
-            out.println("<h3>Manage your WebID's!</h3>");
+            out.println("<h3>Manage your WebIDs!</h3>");
+            
+            String serverName = request.getServerName();
+            int serverPort = request.getServerPort();
+            String home = "";
+            
+            if (serverPort == 443)
+                home = "https://" + serverName;
+            else
+                home = "http://" + serverName;
+            
             if (!found) {
                 // Question: So how did you get in, in the first place?  Answer: Logged in with NetID.
-                out.println("Click <a href=\"" + path + "?3\" target=\"addwin\">Add</a> to associate an existing external WebID.<br>");
-                out.println("Or click <a href=\"ebexp\">Create</a> to create a new WebID.");
+                out.println("<p>Click <a href=\"" + path + "?3\" target=\"addwin\">Add</a> to associate an existing external WebID.<br>");
+                out.println("Or click <a href=\"ebexp\">Create</a> to create a new WebID.</p><br><p><a href=\"" + home + "\"><- Go Back</a></p>");
             } else {
                 out.println("<form method=\"post\">");
                 out.println("<table border=\"0\" width=\"60%\">");
-                out.println("<tr><td><a href=\"" + path + "?3\" target=\"addwin\">Add</a></td>");
-                out.println("<td colspan=\"3\">&nbsp;</td>");
+                out.println("<tr><td><a href=\"" + home + "\"><- Go Back</a></td>");
+                out.println("<td colspan=\"2\">&nbsp;</td>");
+                out.println("<td><a href=\"" + path + "?3\" target=\"addwin\">Add</a></td>");
                 out.println("<td><a href=\"ebexp\" target=\"ebexpwin\">Create</a></td></tr>");
                 out.println("<tr><td colspan=\"5\"><b><u>Webids currently associated with your profile:</u></b></td></tr>");
                 out.println("<tr><td><b>WebID</b></td><td><b>Label</b></td><td><b>Me</b></td><td><b>Local-Hosted</b></td><td><b>Delete</b></td></tr>");
 
                 Iterator it = webidList.iterator();
                 while (it.hasNext()) {
-                    WebIDAssociation bean = (WebIDAssociation) it.next();
+                    WebidAssociation bean = (WebidAssociation) it.next();
                     out.println("<tr>");
                     out.println("<td>" + bean.getWebId() + "</td>");
                     out.println("<td>" + bean.getLabel() + "</td>");
@@ -131,9 +149,7 @@ public class WebidController extends HttpServlet {
             out.println("</body>");
             out.println("</html>");
         } catch (Exception ex) {
-            out.println("<pre>");
-            ex.printStackTrace(out);
-            out.println("</pre>");
+            log.error(ex);
         } finally {
             out.close();
         }
@@ -155,7 +171,7 @@ public class WebidController extends HttpServlet {
         try {
             out = response.getWriter();
         } catch (IOException ex) {
-            Logger.getLogger(WebidController.class.getName()).log(Level.SEVERE, null, ex);
+            log.error(ex);
         }
 
         try {

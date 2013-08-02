@@ -5,17 +5,16 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.security.cert.X509Certificate;
 import javax.servlet.ServletException;
-//import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
- *
+ * Authenticate the user.
+ * 
  * @author Erich Bremer 
  * @author Tammy DiPrima
  */
-//@WebServlet(name = "auth", urlPatterns = {"/auth"})
 public class auth extends HttpServlet 
 {
     private static final int NO_CERT = 1;
@@ -25,73 +24,8 @@ public class auth extends HttpServlet
     private static final int NOT_ASSOCIATED = 5;
     private static final int WHAT = 6;
     
-    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException 
-    {
-        response.setContentType("text/html;charset=UTF-8");
-    
-        PrintWriter out = response.getWriter();
-        
-        out.println("<!DOCTYPE html>");
-        out.println("<html>");
-        out.println("<head>");
-        out.println("<title>WebID Servlet auth</title>");         
-        out.println("</head>");
-        out.println("<body>");
-        out.println("<h1>Servlet auth at " + request.getContextPath() + "</h1>");
-        
-        X509Certificate[] certs = null;
-        X509Certificate cert = null;
-        webid wid = null;
-        
-        try 
-        {
-            try
-            {
-                certs = (X509Certificate[]) request.getAttribute("javax.servlet.request.X509Certificate");
-            }
-            catch (Exception ex)
-            {
-                // Could not get X509Certificate.
-            }
-            
-            if (certs == null) 
-            {
-                out.println("<br>No certs detected.");
-            } 
-            else 
-            {
-                out.println("<br>cipher_suite : " + request.getAttribute("javax.servlet.request.cipher_suite"));
-                out.println("<br>key_size     : " + request.getAttribute("javax.servlet.request.key_size"));
-                out.println("<br>ssl_session  : " + request.getAttribute("javax.servlet.request.ssl_session"));
-                out.println("<br>ssl_session_id  : " + request.getAttribute("javax.servlet.request.ssl_session_id"));
-                                
-                out.println("<br>Number of certificates detected : " + certs.length);
-                
-                cert = certs[0];
-                wid = new webid(cert);
-                
-                out.println("<br>WebID is " + (wid.verified(request) ? "verified" : "not verified"));
-                
-                out.println("<br>WebID URI is " + wid.getURI());
-            }
-
-        }
-        catch (Exception e)
-        {
-            System.out.println("Error in: " + this.getClass().getName() + ": " + e.toString());
-            
-        }
-        finally 
-        {
-            out.println("</body>");
-            out.println("</html>");            
-            out.close();
-        }
-    }
-    
     /**
-     * Person clicked login with webid.
+     * Person clicked login with WebID.
      *
      * @param request
      * @param response
@@ -149,7 +83,13 @@ public class auth extends HttpServlet
             fail(response, message);
         } else {
             // Successful login.
-            response.sendRedirect("https://vivo.stonybrook.edu/");
+            String serverName = request.getServerName();
+            int serverPort = request.getServerPort();
+            
+            if (serverPort == 443)
+                response.sendRedirect("https://" + serverName);
+            else
+                response.sendRedirect("http://" + serverName);
         }
 
     }
