@@ -1,21 +1,20 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.ebremer.webid4vivo;
 
 /**
+ * WebidAssociation bean.
  *
+ * @author Erich Bremer
  * @author tammydiprima
  */
-public class WebIDAssociation {
+public class WebidAssociation {
+
     private boolean me;
     private String webId;
     private boolean localHosted;
     private String label;
     private String uuid;
 
-    public WebIDAssociation(boolean me, String webId, boolean localHosted, String label, String uuid) {
+    public WebidAssociation(boolean me, String webId, boolean localHosted, String label, String uuid) {
         this.me = me;
         this.webId = webId;
         this.localHosted = localHosted;
@@ -62,10 +61,9 @@ public class WebIDAssociation {
     public void setLabel(String label) {
         this.label = label;
     }
-    
+
     @Override
     public String toString() {
-        return "WebIDAssociation{" + "me=" + me + ", webId=" + webId + ", localHosted=" + localHosted + ", label=" + label + '}';
+        return "WebIDAssociation{" + "me=" + me + ", webId=" + webId + ", localHosted=" + localHosted + ", label=" + label + ", uuid=" + uuid + '}';
     }
-    
 }
