@@ -35,7 +35,7 @@ public class WebidController extends HttpServlet {
 
         switch (whichThing) {
             case 1:
-                response.sendRedirect("/gollum");
+                response.sendRedirect("/signIn");
                 break;
             case 2:
                 listWebids(request, response);
