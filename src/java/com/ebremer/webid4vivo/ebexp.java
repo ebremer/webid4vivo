@@ -56,7 +56,7 @@ import sun.security.provider.SecureRandom;
 
 /**
  * Handles WebID generation.
- * 
+ *
  * @author Erich Bremer
  * @author tammydiprima
  */
@@ -87,11 +87,12 @@ public class ebexp extends HttpServlet {
                 out.println("<!DOCTYPE html>");
                 out.println("<html>");
                 out.println("<head>");
-                out.println("<title>Generate your WEBID!</title>");
-                out.println("<link rel=\"stylesheet\" type=\"text/css\" href=\"themes/sbu/css/mycss.css\" />");
-                out.println("</head>");
+                out.println("<title>Generate your WebID!</title>");
+                out.println("<style type=\"text/css\">");
+                out.println("body { font-family: \"Lucida Sans Unicode\",\"Lucida Grande\", Geneva, helvetica, sans-serif; }");
+                out.println("h3 { color: #064d68; } </style></head>");
                 out.println("<body>");
-                out.println("<h2>Generate your WebID!</h2>");
+                out.println("<h3>Generate your WebID!</h3>");
                 out.println("Your WebID will be your VIVO data URI...");
                 out.println("<form method=\"post\">");
                 out.println("<keygen id=\"pubkey\" name=\"pubkey\" challenge=\"randomchars\" keytype=\"rsa\" hidden>");
@@ -114,11 +115,11 @@ public class ebexp extends HttpServlet {
                 out.println("<td align=\"right\"><b>WebID</b></td>");
                 out.println("<td>" + profileUri + "</td>");
                 out.println("</tr>");
-                
+
                 out.println("<tr>");
                 out.println("<td align=\"right\"><b>Label</b></td>");
                 out.println("<td><input type=\"text\" name=\"label\" maxlength=\"100\"></td>");
-                out.println("</tr>");                
+                out.println("</tr>");
 
                 out.println("<tr>");
                 out.println("<td align=\"right\"><b>Number Days Valid</b></td>");
@@ -127,7 +128,7 @@ public class ebexp extends HttpServlet {
 
                 out.println("<tr><td>&nbsp;</td><td>&nbsp;</td></tr>");
                 out.println("<tr><td><input type=\"submit\" name=\"createcert\" value=\"Generate\"></td>");
-                out.println("<td><button type=\"button\" value=\"Cancel\" onClick=\"window.close();\">Cancel</button><td></tr>");
+                out.println("<td><button type=\"button\" value=\"Cancel\" onClick=\"window.location='/webidMgt?2'\">Go Back</button></td></tr>");
                 out.println("</table>");
 
                 out.println("</form>");
@@ -141,23 +142,6 @@ public class ebexp extends HttpServlet {
             Logger.getLogger(ebexp.class.getName()).log(Level.SEVERE, "Null user.");
         }
 
-    }
-
-    /**
-     * Close this window, and refresh parent window.
-     *
-     * @param response
-     * @throws IOException
-     */
-    private void closeAndRefresh(HttpServletResponse response) throws IOException {
-        response.setContentType("text/html;charset=UTF-8");
-        PrintWriter out = null;
-        try {
-            out = response.getWriter();
-            out.println(new WebidHelper().getCloseAndRefresh());
-        } finally {
-            out.close();
-        }
     }
 
     /**
@@ -212,7 +196,7 @@ public class ebexp extends HttpServlet {
         sb.append(last.trim());
         sb.append("'s VIVO WebID - ");
         sb.append(label);
-        
+
         nb.addRDN(BCStyle.CN, sb.toString());
         X500Name subject = nb.build();
 
@@ -270,7 +254,6 @@ public class ebexp extends HttpServlet {
 
         // OK WE'RE DONE CREATING THE CERT! UPDATE VIVO.
         x.updateVivoWithGeneratedWebid(request, theCert);
-        //x.updateVivoWith_BLANKNODE(request, theCert);
 
         // Finally, send WebID certificate to client
         try {
@@ -284,9 +267,8 @@ public class ebexp extends HttpServlet {
         } finally {
             out.close();
         }
-        
-        
-        
+
+
     }
 
     @Override
@@ -335,8 +317,6 @@ public class ebexp extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         processForm(request, response);
-        //updateVivo(request, request.getParameter("webid"));
-        closeAndRefresh(response);
     }
 
     /**

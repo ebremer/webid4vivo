@@ -267,7 +267,9 @@ public class WebidHelper {
         sb.append("> ;\n");
         sb.append(" auth:localHosted true ;\n");
         sb.append(" auth:me true ;\n");
-        sb.append(" rdfs:label \"home\" ;\n");
+        sb.append(" rdfs:label \"");
+        sb.append(label);
+        sb.append("\" ;\n");
         sb.append(" auth:hasUUID ");
         sb.append("<");
         sb.append(uuid);
@@ -353,7 +355,9 @@ public class WebidHelper {
         sb.append("> ;\n");
         sb.append(" auth:localHosted true ;\n");
         sb.append(" auth:me true ;\n");
-        sb.append(" rdfs:label \"home\" ;\n");
+        sb.append(" rdfs:label \"");
+        sb.append(label);
+        sb.append("\" ;\n");
         sb.append(" auth:hasUUID ");
         sb.append("<");
         sb.append(uuid);
@@ -520,27 +524,6 @@ public class WebidHelper {
         return profileURI;
     }
 
-    /**
-     * Code for: Close this window, and refresh parent window.
-     *
-     * @return the closeAndRefresh
-     */
-    public String getCloseAndRefresh() {
-        StringBuffer sb = new StringBuffer();
-        sb.append("<html>");
-        sb.append("<head>");
-        sb.append("<script language=\"javascript\">");
-        sb.append("function closeAndRefresh(){");
-        sb.append("  opener.location.reload();");
-        sb.append("  window.close();");
-        sb.append("}");
-        sb.append("</script>");
-        sb.append("</head>");
-        sb.append("<body onload=\"closeAndRefresh()\">");
-        sb.append("</body>");
-        sb.append("</html>");
-        return sb.toString();
-    }
 
     /**
      * Delete selected webids.

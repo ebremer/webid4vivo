@@ -13,12 +13,12 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * Handles requests for WebID.
- * 
+ *
  * @author Erich Bremer
  * @author tammydiprima
  */
 public class WebidController extends HttpServlet {
-    
+
     private final String path = "webidMgt";
     private static final Log log = LogFactory.getLog(WebidController.class);
 
@@ -52,8 +52,10 @@ public class WebidController extends HttpServlet {
                     out.println("<html>");
                     out.println("<head>");
                     out.println("<title>WebID Log In</title>");
-                    out.println("</head>");
-                    out.println("<link rel=\"stylesheet\" type=\"text/css\" href=\"themes/sbu/css/mycss.css\" />");
+                    out.println("<style type=\"text/css\">");
+                    out.println("body { font-family: \"Lucida Sans Unicode\",\"Lucida Grande\", Geneva, helvetica, sans-serif; }");
+                    out.println("h3 { color: #064d68; } </style></head>");
+
                     out.println("<body>");
                     out.println("<p>");
                     out.println("Page not found.<br>");
@@ -82,8 +84,9 @@ public class WebidController extends HttpServlet {
             out.println("<html>");
             out.println("<head>");
             out.println("<title>Your Current Webids</title>");
-            out.println("</head>");
-            out.println("<link rel=\"stylesheet\" type=\"text/css\" href=\"themes/sbu/css/mycss.css\" />");
+            out.println("<style type=\"text/css\">");
+            out.println("body { font-family: \"Lucida Sans Unicode\",\"Lucida Grande\", Geneva, helvetica, sans-serif; }");
+            out.println("h3 { color: #064d68; } </style></head>");
             out.println("<body>");
 
             WebidHelper x = new WebidHelper();
@@ -99,29 +102,26 @@ public class WebidController extends HttpServlet {
                 found = false;
             }
 
-            
             out.println("<h3>Manage your WebIDs!</h3>");
-            
-            String serverName = request.getServerName();
+
+            String profileUri = x.getProfileUri(request);
             int serverPort = request.getServerPort();
-            String home = "";
-            
             if (serverPort == 443)
-                home = "https://" + serverName;
-            else
-                home = "http://" + serverName;
-            
+            {
+                profileUri = profileUri.replace("http", "https");
+            }
+
             if (!found) {
                 // Question: So how did you get in, in the first place?  Answer: Logged in with NetID.
-                out.println("<p>Click <a href=\"" + path + "?3\" target=\"addwin\">Add</a> to associate an existing external WebID.<br>");
-                out.println("Or click <a href=\"ebexp\">Create</a> to create a new WebID.</p><br><p><a href=\"" + home + "\"><- Go Back</a></p>");
+                out.println("<p>Click <a href=\"" + path + "?3\">Add</a> to associate an existing external WebID.<br>");
+                out.println("Or click <a href=\"ebexp\">Create</a> to create a new WebID.</p><br><p><a href=\"" + profileUri + "\">&lt;&mdash;Go Back</a></p>");
             } else {
                 out.println("<form method=\"post\">");
                 out.println("<table border=\"0\" width=\"60%\">");
-                out.println("<tr><td><a href=\"" + home + "\"><- Go Back</a></td>");
+                out.println("<tr><td><a href=\"" + profileUri + "\">&lt;&mdash;Go Back</a></td>");
                 out.println("<td colspan=\"2\">&nbsp;</td>");
-                out.println("<td><a href=\"" + path + "?3\" target=\"addwin\">Add</a></td>");
-                out.println("<td><a href=\"ebexp\" target=\"ebexpwin\">Create</a></td></tr>");
+                out.println("<td><a href=\"" + path + "?3\">Add</a></td>");
+                out.println("<td><a href=\"ebexp\">Create</a></td></tr>");
                 out.println("<tr><td colspan=\"5\"><b><u>Webids currently associated with your profile:</u></b></td></tr>");
                 out.println("<tr><td><b>WebID</b></td><td><b>Label</b></td><td><b>Me</b></td><td><b>Local-Hosted</b></td><td><b>Delete</b></td></tr>");
 
@@ -163,8 +163,6 @@ public class WebidController extends HttpServlet {
      * @throws IOException
      */
     private void associateExistingWebID(HttpServletRequest request, HttpServletResponse response) {
-        // Detail out simple entry for WebID and OK/Cancel
-        //throw new UnsupportedOperationException("Not supported yet."); 
 
         response.setContentType("text/html;charset=UTF-8");
         PrintWriter out = null;
@@ -178,11 +176,11 @@ public class WebidController extends HttpServlet {
 
             StringBuffer sb = new StringBuffer();
             sb.append("<html>\n");
-            sb.append("<head><title>Add WebID (Associate WebID)</title></head>\n");
-            sb.append("<link rel=\"stylesheet\" type=\"text/css\" href=\"themes/sbu/css/mycss.css\" />\n");
-            sb.append("<script language=\"javascript\" src=\"themes/sbu/js/myjs.js\"></script>\n");
+            sb.append("<head><title>Add WebID (Associate WebID)</title>\n");
+            sb.append("<style type=\"text/css\">\n");
+            sb.append("body { font-family: \"Lucida Sans Unicode\",\"Lucida Grande\", Geneva, helvetica, sans-serif; }\n");
+            sb.append("h3 { color: #064d68; } </style></head>\n");
             sb.append("<body>\n");
-
             sb.append("    <form id=\"form1\" method=\"post\">\n");
             sb.append("    <div>\n");
             sb.append("        <h3>Add a WebID to your profile!</h3>\n");
@@ -191,7 +189,7 @@ public class WebidController extends HttpServlet {
             sb.append("        <tr>\n");
             sb.append("            <td>WebID</td>\n");
             sb.append("            <td>\n");
-            sb.append("            	<input type=\"text\" name=\"txtWebId\" id=\"txtWebId\" value=\"http://www.mydomain.com/foaf.rdf\" onfocus=\"Focus(this.id,'http://www.mydomain.com/foaf.rdf')\" onblur=\"Blur(this.id,'http://www.mydomain.com/foaf.rdf')\"  Width=\"200px\" CssClass=\"WaterMarkedTextBox\">\n");
+            sb.append("            	<input type=\"text\" name=\"txtWebId\" id=\"txtWebId\">\n");
             sb.append("            </td>\n");
             sb.append("        </tr>\n");
             sb.append("        <tr>\n");
@@ -199,7 +197,7 @@ public class WebidController extends HttpServlet {
             sb.append("            </td>");
             sb.append("            <td>\n");
             sb.append("	            <input type=\"submit\" value=\"Submit\" name=\"add\">\n");
-            sb.append("	            <button type=\"button\" value=\"Cancel\" onClick=\"window.close();\">Cancel</button>\n");
+            sb.append("	            <button type=\"button\" value=\"Cancel\" onClick=\"window.location='/" + path + "?2'\">Go Back</button>\n");
             sb.append("            </td>\n");
             sb.append("        </tr>\n");
             sb.append("    </table>\n");
@@ -258,7 +256,7 @@ public class WebidController extends HttpServlet {
                 response.sendRedirect("/" + path + "?2");
             } else {
                 x.updateVivoWithExternalWebid(request);
-                out.println(x.getCloseAndRefresh());
+                response.sendRedirect("/" + path + "?2");
             }
 
         } finally {

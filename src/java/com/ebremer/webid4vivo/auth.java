@@ -111,9 +111,9 @@ public class auth extends HttpServlet
             out.println("<html>");
             out.println("<head>");
             out.println("<title>WebID Log In</title>");
-            out.println("</head>");
-            out.println("<link rel=\"stylesheet\" type=\"text/css\" href=\"themes/sbu/css/mycss.css\" />");
-
+            out.println("<style type=\"text/css\">\n");
+            out.println("body { font-family: \"Lucida Sans Unicode\",\"Lucida Grande\", Geneva, helvetica, sans-serif; }\n");
+            out.println("h3 { color: #064d68; } </style></head>\n");
             out.println("<body>");
 
             out.println("<p>");
