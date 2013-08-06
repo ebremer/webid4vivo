@@ -1,4 +1,4 @@
-package com.ebremer.webid4vivo;
+package edu.stonybrook.ai;
 
 import edu.cornell.mannlib.vitro.webapp.beans.UserAccount;
 import java.io.ByteArrayInputStream;
@@ -58,9 +58,9 @@ import sun.security.provider.SecureRandom;
  * Handles WebID generation.
  *
  * @author Erich Bremer
- * @author tammydiprima
+ * @author Tammy DiPrima
  */
-public class ebexp extends HttpServlet {
+public class WebidGenerator extends HttpServlet {
 
     static KeyPair keypair = null;
 
@@ -139,7 +139,7 @@ public class ebexp extends HttpServlet {
             }
 
         } else {
-            Logger.getLogger(ebexp.class.getName()).log(Level.SEVERE, "Null user.");
+            Logger.getLogger(WebidGenerator.class.getName()).log(Level.SEVERE, "Null user.");
         }
 
     }
@@ -215,7 +215,7 @@ public class ebexp extends HttpServlet {
         try {
             subjectKeyIdentifier = new JcaX509ExtensionUtils().createSubjectKeyIdentifier(pk);
         } catch (NoSuchAlgorithmException ex) {
-            Logger.getLogger(ebexp.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(WebidGenerator.class.getName()).log(Level.SEVERE, null, ex);
         }
         b.addExtension(X509Extension.subjectKeyIdentifier, false, subjectKeyIdentifier);
         GeneralNames subjectAltNames = new GeneralNames(new GeneralName(GeneralName.uniformResourceIdentifier, webid));
@@ -227,7 +227,7 @@ public class ebexp extends HttpServlet {
         try {
             sigGen = new BcRSAContentSignerBuilder(sigAlgId, digAlgId).build(foo);
         } catch (OperatorCreationException ex) {
-            Logger.getLogger(ebexp.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(WebidGenerator.class.getName()).log(Level.SEVERE, null, ex);
         }
         // Sign certificate by server
         X509CertificateHolder holder = b.build(sigGen);
@@ -236,16 +236,16 @@ public class ebexp extends HttpServlet {
         try {
             cf = CertificateFactory.getInstance("X.509", "BC");
         } catch (CertificateException ex) {
-            Logger.getLogger(ebexp.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(WebidGenerator.class.getName()).log(Level.SEVERE, null, ex);
         } catch (NoSuchProviderException ex) {
-            Logger.getLogger(ebexp.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(WebidGenerator.class.getName()).log(Level.SEVERE, null, ex);
         }
         InputStream is1 = new ByteArrayInputStream(eeX509CertificateStructure.getEncoded());
         X509Certificate theCert = null;
         try {
             theCert = (X509Certificate) cf.generateCertificate(is1);
         } catch (CertificateException ex) {
-            Logger.getLogger(ebexp.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(WebidGenerator.class.getName()).log(Level.SEVERE, null, ex);
         }
         is1.close();
 
@@ -284,7 +284,7 @@ public class ebexp extends HttpServlet {
                     retString.append(Integer.toHexString(0x0100 + (publicKey[i] & 0x00FF)).substring(1));
                 }
             } catch (NoSuchAlgorithmException ex) {
-                Logger.getLogger(ebexp.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(WebidGenerator.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
     }

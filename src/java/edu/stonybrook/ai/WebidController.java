@@ -1,4 +1,4 @@
-package com.ebremer.webid4vivo;
+package edu.stonybrook.ai;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -15,7 +15,7 @@ import org.apache.commons.logging.LogFactory;
  * Handles requests for WebID.
  *
  * @author Erich Bremer
- * @author tammydiprima
+ * @author Tammy DiPrima
  */
 public class WebidController extends HttpServlet {
 
@@ -114,14 +114,14 @@ public class WebidController extends HttpServlet {
             if (!found) {
                 // Question: So how did you get in, in the first place?  Answer: Logged in with NetID.
                 out.println("<p>Click <a href=\"" + path + "?3\">Add</a> to associate an existing external WebID.<br>");
-                out.println("Or click <a href=\"ebexp\">Create</a> to create a new WebID.</p><br><p><a href=\"" + profileUri + "\">&lt;&mdash;Go Back</a></p>");
+                out.println("Or click <a href=\"webidGen\">Create</a> to create a new WebID.</p><br><p><a href=\"" + profileUri + "\">&lt;&mdash;Go Back</a></p>");
             } else {
                 out.println("<form method=\"post\">");
                 out.println("<table border=\"0\" width=\"60%\">");
                 out.println("<tr><td><a href=\"" + profileUri + "\">&lt;&mdash;Go Back</a></td>");
                 out.println("<td colspan=\"2\">&nbsp;</td>");
                 out.println("<td><a href=\"" + path + "?3\">Add</a></td>");
-                out.println("<td><a href=\"ebexp\">Create</a></td></tr>");
+                out.println("<td><a href=\"webidGen\">Create</a></td></tr>");
                 out.println("<tr><td colspan=\"5\"><b><u>Webids currently associated with your profile:</u></b></td></tr>");
                 out.println("<tr><td><b>WebID</b></td><td><b>Label</b></td><td><b>Me</b></td><td><b>Local-Hosted</b></td><td><b>Delete</b></td></tr>");
 

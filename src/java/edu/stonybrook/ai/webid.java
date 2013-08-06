@@ -1,4 +1,4 @@
-package com.ebremer.webid4vivo;
+package edu.stonybrook.ai;
 
 /**
  * WebID bean.

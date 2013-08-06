@@ -1,4 +1,4 @@
-package com.ebremer.webid4vivo;
+package edu.stonybrook.ai;
 
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.query.QueryExecution;
@@ -35,8 +35,10 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 /**
- *
- * @author tammydiprima
+ * Handle back-end communications.
+ * 
+ * @author Erich Bremer
+ * @author Tammy DiPrima
  */
 public class WebidHelper {
 

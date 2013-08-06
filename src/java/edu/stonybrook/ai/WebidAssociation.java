@@ -1,10 +1,10 @@
-package com.ebremer.webid4vivo;
+package edu.stonybrook.ai;
 
 /**
  * WebidAssociation bean.
  *
  * @author Erich Bremer
- * @author tammydiprima
+ * @author Tammy DiPrima
  */
 public class WebidAssociation {
 
