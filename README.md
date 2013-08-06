@@ -7,6 +7,10 @@ Developers:
 Erich Bremer
 Tammy DiPrima
 
+=================
+
+HOW TO IMPLEMENT:
+
 Move java files to [vivo-install-dir]/src/edu/stonybrook/ai/webid4vivo
 
 Add the servlets & servlet mappings to productMods/WEB-INF/web.xml:
