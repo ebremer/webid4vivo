@@ -19,7 +19,7 @@ import org.apache.commons.logging.LogFactory;
  */
 public class WebidController extends HttpServlet {
     
-    private final String path = "torrini";
+    private final String path = "webidMgt";
     private static final Log log = LogFactory.getLog(WebidController.class);
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
