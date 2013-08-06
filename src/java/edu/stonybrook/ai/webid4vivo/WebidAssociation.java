@@ -1,4 +1,4 @@
-package edu.stonybrook.ai;
+package edu.stonybrook.ai.webid4vivo;
 
 /**
  * WebidAssociation bean.

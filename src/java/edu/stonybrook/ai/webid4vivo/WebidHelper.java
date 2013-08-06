@@ -1,4 +1,4 @@
-package edu.stonybrook.ai;
+package edu.stonybrook.ai.webid4vivo;
 
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.query.QueryExecution;
