@@ -7,7 +7,7 @@ Tammy DiPrima
 
 =================
 
-**HOW TO IMPLEMENT:**
+<h4>HOW TO IMPLEMENT:</h4>
 
 **Move java files to:** [vivo-install-dir]/src/edu/stonybrook/ai/webid4vivo
 
