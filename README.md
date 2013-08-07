@@ -1,5 +1,5 @@
 webid4vivo
-==========
+=================
 
 webid4vivo <br>
 add webid authentication and provisioning capabilities to VIVO (http://www.vivoweb.org)
