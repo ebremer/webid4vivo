@@ -5,7 +5,7 @@ webid4vivo <br>
 add webid authentication and provisioning capabilities to VIVO (http://www.vivoweb.org)
 
 **Developers:**<br>
-Erich Bremer
+Erich Bremer<br>
 Tammy DiPrima
 
 =================
