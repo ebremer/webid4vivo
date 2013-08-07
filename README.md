@@ -1,8 +1,5 @@
-webid4vivo
-=================
-
-webid4vivo <br>
-add webid authentication and provisioning capabilities to VIVO (http://www.vivoweb.org)
+<h3>webid4vivo</h3>
+Purpose: To add webid authentication and provisioning capabilities to VIVO (http://www.vivoweb.org)
 
 **Developers:**<br>
 Erich Bremer<br>
