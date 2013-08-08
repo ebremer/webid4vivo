@@ -1,5 +1,5 @@
 ## webid4vivo
-<br>
+
 Purpose: To add webid authentication and provisioning capabilities to VIVO (http://www.vivoweb.org)
 
 **Developers:**<br>
