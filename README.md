@@ -9,6 +9,21 @@ Tammy DiPrima
 
 <h4>HOW TO IMPLEMENT:</h4>
 
+#### Required Jars
+
+**Get [Bouncy Castle Crypto APIs](http://www.bouncycastle.org/):** 
+
+* bcmail-jdk15on-149.jar
+* bcpg-jdk15on-149.jar
+* bcpkix-jdk15on-149.jar 
+* bcprov-jdk15on-149.jar
+* bctest-jdk15on-149.jar
+* jce-jdk13-149.jar
+
+Put these jars here: [vivo-install-dir]/src
+
+#### Source Code
+
 **Move java files to:** [vivo-install-dir]/src/edu/stonybrook/ai/webid4vivo
 
 **Add the servlets & servlet mappings to productMods/WEB-INF/web.xml:**<br>
@@ -39,6 +54,8 @@ Tammy DiPrima
     &lt;/servlet-mapping&gt;
 </code></pre>
 
+#### Freemarker
+
 **Add the following to /vitro-core/webapp/web/templates/freemarker/widgets/widget-login.ftl:**
 <pre><code>
 &lt;p class="external-auth"&gt;&lt;a class="blue button" href="/signIn" title="webid"&gt;WebID&lt;/a&gt;&lt;/p&gt;
@@ -56,11 +73,13 @@ Tammy DiPrima
 <pre><code>
         &lt;#if user.loggedIn&gt;
          &lt;div align="right"&gt;&lt;a href="/webidMgt?2"&gt;My WebIDs&lt;/a&gt;&lt;/div&gt;
-    	&lt;/#if&gt;
+        &lt;/#if&gt;
 </code></pre>
 </p>
 **Stop tomcat<br>
 Redeploy vivo<br>**
+
+#### Apache HTTP Server
 
 **Modify /etc/httpd/conf/httpd.conf:**
 <pre><code>
