@@ -28,6 +28,7 @@ Tammy DiPrima
   * jena-arq  
 * The VIVO class files:
   * Package them into a jar. Specifically, the class files that you would find under: WEB-INF/classes/edu
+* Finally, of course, you'll need the Java and Java Servlet APIs
 
 
 #### Source Code
