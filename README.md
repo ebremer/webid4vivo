@@ -11,14 +11,10 @@ Tammy DiPrima
 
 #### Required Jars
 
-**Get [Bouncy Castle Crypto APIs](http://www.bouncycastle.org/):** 
+**Get [Bouncy Castle](http://www.bouncycastle.org/latest_releases.html) Crypto APIs, latest releases:** 
 
-* bcmail-jdk15on-149.jar
-* bcpg-jdk15on-149.jar
 * bcpkix-jdk15on-149.jar 
 * bcprov-jdk15on-149.jar
-* bctest-jdk15on-149.jar
-* jce-jdk13-149.jar
 
 Put these jars here: [vivo-install-dir]/src
 
@@ -95,4 +91,3 @@ SSLVerifyClient optional_no_ca
 &lt;/Location&gt;
 </code></pre>
 **Restart apache**
-
