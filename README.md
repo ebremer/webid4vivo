@@ -1,4 +1,4 @@
-<h3>webid4vivo</h3>
+## webid4vivo
 Purpose: To add webid authentication and provisioning capabilities to VIVO (http://www.vivoweb.org)
 
 **Developers:**<br>
@@ -7,7 +7,7 @@ Tammy DiPrima
 
 =================
 
-<h4>HOW TO IMPLEMENT:</h4>
+### HOW TO IMPLEMENT:
 
 #### Required Jars
 
@@ -62,7 +62,8 @@ Put these jars here: [vivo-install-dir]/src
 &lt;p class="external-auth"&gt;&lt;a class="green button" href="${externalAuthUrl}" title="external authentication name"&gt;${externalAuthName}&lt;/a&gt;&lt;/p&gt;
 </code></pre>
 **Add the following to productMods/templates/freemarker/body/individual/individual--foaf-person.ftl**:
-<p>*Where it says:*
+
+*Where it says:*
 <pre><code>&lt;section id="individual-info" ${infoClass!} role="region"&gt; &lt;br&gt;
 </code></pre>
 *Add this underneath:*
@@ -71,9 +72,9 @@ Put these jars here: [vivo-install-dir]/src
          &lt;div align="right"&gt;&lt;a href="/webidMgt?2"&gt;My WebIDs&lt;/a&gt;&lt;/div&gt;
         &lt;/#if&gt;
 </code></pre>
-</p>
-**Stop tomcat<br>
-Redeploy vivo<br>**
+
+**Stop Tomcat<br>
+Redeploy VIVO<br>**
 
 #### Apache HTTP Server
 
