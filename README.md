@@ -17,7 +17,7 @@ Tammy DiPrima
 * bcpkix-jdk15on-149.jar 
 * bcprov-jdk15on-149.jar
 
-**For your local development environement, you'll also need:**
+**For your local development environment, you'll also need:**
 
 * The [Apache Commons Logging](http://commons.apache.org/proper/commons-logging/download_logging.cgi) jar
   * commons-logging
