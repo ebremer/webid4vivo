@@ -12,7 +12,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 /**
- * Handles requests for WebID.
+ * Builds the user interface for WebID.
  *
  * @author Erich Bremer
  * @author Tammy DiPrima
@@ -22,6 +22,14 @@ public class WebidController extends HttpServlet {
     private final String path = "webidMgt";
     private static final Log log = LogFactory.getLog(WebidController.class);
 
+    /**
+     * Send commands to associated view, depending on the request.
+     *
+     * @param request
+     * @param response
+     * @throws ServletException
+     * @throws IOException
+     */
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
@@ -55,7 +63,6 @@ public class WebidController extends HttpServlet {
                     out.println("<style type=\"text/css\">");
                     out.println("body { font-family: \"Lucida Sans Unicode\",\"Lucida Grande\", Geneva, helvetica, sans-serif; }");
                     out.println("h3 { color: #064d68; } </style></head>");
-
                     out.println("<body>");
                     out.println("<p>");
                     out.println("Page not found.<br>");
@@ -71,7 +78,9 @@ public class WebidController extends HttpServlet {
     }
 
     /**
+     * WebID management screen.
      *
+     * @param request
      * @param response
      * @throws IOException
      */
@@ -83,7 +92,7 @@ public class WebidController extends HttpServlet {
             out.println("<!DOCTYPE html>");
             out.println("<html>");
             out.println("<head>");
-            out.println("<title>Your Current Webids</title>");
+            out.println("<title>Manage your WebIDs</title>");
             out.println("<style type=\"text/css\">");
             out.println("body { font-family: \"Lucida Sans Unicode\",\"Lucida Grande\", Geneva, helvetica, sans-serif; }");
             out.println("h3 { color: #064d68; } </style></head>");
@@ -102,17 +111,16 @@ public class WebidController extends HttpServlet {
                 found = false;
             }
 
-            out.println("<h3>Manage your WebIDs!</h3>");
+            out.println("<h3>Manage your WebIDs</h3>");
 
             String profileUri = x.getProfileUri(request);
             int serverPort = request.getServerPort();
-            if (serverPort == 443)
-            {
+            if (serverPort == 443) {
                 profileUri = profileUri.replace("http", "https");
             }
 
             if (!found) {
-                // Question: So how did you get in, in the first place?  Answer: Logged in with NetID.
+                // User logged in with NetID, and now they would like to manage their WebIDs.
                 out.println("<p>Click <a href=\"" + path + "?3\">Add</a> to associate an existing external WebID.<br>");
                 out.println("Or click <a href=\"webidGen\">Create</a> to create a new WebID.</p><br><p><a href=\"" + profileUri + "\">&lt;&mdash;Go Back</a></p>");
             } else {
@@ -137,7 +145,7 @@ public class WebidController extends HttpServlet {
                     out.println("</tr>");
                 }
                 out.println("<tr>");
-                out.println("<td><input type=\"submit\" value=\"Submit\" name=\"manage\">&nbsp;&nbsp;&nbsp;");
+                out.println("<td><input type=\"submit\" value=\"Delete Selected\" name=\"manage\">&nbsp;&nbsp;&nbsp;");
                 out.println("<button type=\"reset\">Clear Checkboxes</button></td>");
                 out.println("<td colspan=\"4\">&nbsp;</td>");
                 out.println("</tr>");
@@ -156,11 +164,10 @@ public class WebidController extends HttpServlet {
     }
 
     /**
-     * Associate an existing WebID.
+     * Associate an existing (external) WebID.
      *
-     * @param requestWebids currently associated with your profile
+     * @param request
      * @param response
-     * @throws IOException
      */
     private void associateExistingWebID(HttpServletRequest request, HttpServletResponse response) {
 
@@ -214,9 +221,8 @@ public class WebidController extends HttpServlet {
 
     }
 
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**
-     * Handles the HTTP
+     * Performs the HTTP GET operation.
      * <code>GET</code> method.
      *
      * @param request servlet request
@@ -232,7 +238,7 @@ public class WebidController extends HttpServlet {
     }
 
     /**
-     * Handles the HTTP
+     * Performs the HTTP POST operation.
      * <code>POST</code> method.
      *
      * @param request servlet request

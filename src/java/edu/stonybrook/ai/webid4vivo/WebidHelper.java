@@ -35,8 +35,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 /**
- * Handle back-end communications.
- * 
+ * Utility class that does useful things, such as querying and updating the
+ * database.
+ *
  * @author Erich Bremer
  * @author Tammy DiPrima
  */
@@ -45,7 +46,7 @@ public class WebidHelper {
     private static final Log log = LogFactory.getLog(WebidHelper.class);
 
     /**
-     * Hand back THE ontology model.
+     * Get ontology model.
      *
      * @param request
      * @return
@@ -55,7 +56,7 @@ public class WebidHelper {
     }
 
     /**
-     * Current user account.
+     * Get current user account.
      *
      * @param request
      * @return
@@ -66,9 +67,10 @@ public class WebidHelper {
     }
 
     /**
-     * User is logging in with WebID.
+     * User is logging in with WebID. Get current user account.
      *
      * @param request
+     * @param webid
      * @return
      */
     protected UserAccount getUserAccount(HttpServletRequest request, String webid) {
@@ -107,7 +109,6 @@ public class WebidHelper {
         } finally {
             // Releases the lock from the matching enterCriticalSection.
             userAccts.leaveCriticalSection();
-            //aboxModel.close();
         }
 
         if (!userAcctUri.isEmpty()) {
@@ -120,6 +121,7 @@ public class WebidHelper {
     }
 
     /**
+     * Record login against UserAccount.
      *
      * @param request
      * @param user
@@ -132,6 +134,10 @@ public class WebidHelper {
 
     /**
      * Add data to model.
+     *
+     * @param request
+     * @param s
+     * @param acctsModel
      */
     protected void addIt(HttpServletRequest request, String s, boolean acctsModel) {
 
@@ -148,7 +154,6 @@ public class WebidHelper {
 
         model.enterCriticalSection(Lock.WRITE);
         try {
-            /* avoiding blank node issue for now.... */
             InputStream is = null;
             try {
                 is = new ByteArrayInputStream(s.getBytes("UTF-8"));
@@ -158,15 +163,6 @@ public class WebidHelper {
             Model im = ModelFactory.createDefaultModel();
             im.read(is, null, "TTL");
 
-            String whichModel;
-
-            if (acctsModel) {
-                whichModel = "Accounts Model";
-            } else {
-                whichModel = "Public ABox Model";
-            }
-
-            //im.write(System.out, "TTL");
             model.add(im);
 
         } catch (Exception ex) {
@@ -177,7 +173,7 @@ public class WebidHelper {
     }
 
     /**
-     * Update vivo with person's webid.
+     * Update VIVO with person's external WebID.
      *
      * @param request
      */
@@ -223,9 +219,10 @@ public class WebidHelper {
     }
 
     /**
-     * Update vivo with person's webid.
+     * Update VIVO with person's generated WebID.
      *
      * @param request
+     * @param cert
      */
     public void updateVivoWithGeneratedWebid(HttpServletRequest request, X509Certificate cert) {
 
@@ -323,86 +320,7 @@ public class WebidHelper {
     }
 
     /**
-     * Update vivo with person's webid.
-     *
-     * @param request
-     */
-    public void updateVivoWith_BLANKNODE(HttpServletRequest request, X509Certificate cert) {
-
-        RSAPublicKey certpublickey = (RSAPublicKey) cert.getPublicKey();
-        String modulus = String.format("%0288x", certpublickey.getModulus());
-        String exponent = String.valueOf(certpublickey.getPublicExponent());
-        String label = request.getParameter("label");
-
-        String webid = request.getParameter("webid");
-
-        String namespace = this.getNamespace(request);
-        UUID rand = UUID.randomUUID();
-        String uuid = namespace + "n" + rand;
-
-        UserAccount userAccount = getCurrentUserAccount(request);
-        StringBuffer sb = new StringBuffer();
-        sb.append("@prefix cert: <http://www.w3.org/ns/auth/cert#> .\n");
-        sb.append("@prefix auth: <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> .\n");
-        sb.append("@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n");
-        sb.append("<");
-        sb.append(userAccount.getUri());
-        sb.append("> ");
-        sb.append(" auth:hasWebIDAssociation ");
-        sb.append("_:bnode .\n");
-        sb.append("_:bnode ");
-        sb.append(" auth:hasWebID ");
-        sb.append("<");
-        sb.append(webid);
-        sb.append("> ;\n");
-        sb.append(" auth:localHosted true ;\n");
-        sb.append(" auth:me true ;\n");
-        sb.append(" rdfs:label \"");
-        sb.append(label);
-        sb.append("\" ;\n");
-        sb.append(" auth:hasUUID ");
-        sb.append("<");
-        sb.append(uuid);
-        sb.append("> ;\n");
-        sb.append(" cert:key ");
-        sb.append("_:bnode1 .\n");
-        sb.append("_:bnode1 ");
-        sb.append(" a cert:RSAPublicKey ;\n");
-        sb.append(" cert:exponent ");
-        sb.append(exponent);
-        sb.append(";\n cert:modulus ");
-        sb.append("\"");
-        sb.append(modulus);
-        sb.append("\"^^<http://www.w3.org/2001/XMLSchema#hexBinary> . \n");
-
-
-        addIt(request, sb.toString(), true);
-
-        StringBuffer str = new StringBuffer();
-
-
-        str.append("@prefix cert: <http://www.w3.org/ns/auth/cert#> .\n");
-        str.append("@prefix auth: <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> .\n");
-        str.append("@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n");
-        str.append("<");
-        str.append(webid);
-        str.append("> ");
-        str.append(" cert:key ");
-        str.append("_:bnode .\n");
-        str.append("_:bnode ");
-        str.append(" a cert:RSAPublicKey ;\n");
-        str.append(" cert:exponent ");
-        str.append(exponent);
-        str.append(";\n cert:modulus ");
-        str.append("\"");
-        str.append(modulus);
-        str.append("\"^^<http://www.w3.org/2001/XMLSchema#hexBinary> . \n");
-
-        addIt(request, str.toString(), false);
-
-    }
-
-    /**
+     * Get list of WebIDs for WebID management screen.
      *
      * @param request
      * @return
@@ -413,14 +331,11 @@ public class WebidHelper {
 
         queryString.append("PREFIX  auth:  <http://vitro.mannlib.cornell.edu/ns/vitro/authorization#> \n");
         queryString.append("PREFIX  rdfs:  <http://www.w3.org/2000/01/rdf-schema#> \n");
-
         queryString.append("SELECT ?hasWebIDAssociation ?me ?webid ?localHosted ?uuid ?label \n");
         queryString.append("WHERE { \n");
         queryString.append("<");
-        //queryString.append(getProfileUri(request));
         queryString.append(this.getCurrentUserAccount(request).getUri());
         queryString.append(">\n");
-
         queryString.append("auth:hasWebIDAssociation ?bnode . \n");
         queryString.append("?bnode auth:me ?me ; \n");
         queryString.append("auth:hasWebID ?webid ; \n");
@@ -438,7 +353,6 @@ public class WebidHelper {
         OntModelSelector ontModelSelector = ModelContext.getOntModelSelector(ctx);
         OntModel userAccts = ontModelSelector.getUserAccountsModel();
 
-        // Enter a critical section. The application must call leaveCriticialSection.
         userAccts.enterCriticalSection(Lock.READ);
 
         try {
@@ -455,17 +369,11 @@ public class WebidHelper {
                 String uuid = (String) q.getResource("uuid").getURI();
 
                 webidList.add(new WebidAssociation(me, webid, localHosted, label, uuid));
-
-                // TODO: ADD ROLE.
-                //out.println("<tr><td>" + really.getString() + "</td><td>Self-Edit</td></tr>");
             }
             qe.close();
         } finally {
-            // Releases the lock from the matching enterCriticalSection.
             userAccts.leaveCriticalSection();
-            //aboxModel.close();
         }
-
 
         return webidList;
 
@@ -482,10 +390,9 @@ public class WebidHelper {
     }
 
     /**
-     * I have a User Account. Now get Profile URI.
+     * We have a User Account. Now, get Profile URI.
      *
      * @param request
-     * @param response
      * @return
      */
     public String getProfileUri(HttpServletRequest request) {
@@ -519,16 +426,14 @@ public class WebidHelper {
             }
             qe.close();
         } else {
-            // Shouldn't happen, but...
             Logger.getLogger(WebidHelper.class.getName()).log(Level.SEVERE, "Null Profile.");
         }
 
         return profileURI;
     }
 
-
     /**
-     * Delete selected webids.
+     * Delete selected WebIDs.
      *
      * @param request
      * @throws IOException
@@ -622,10 +527,10 @@ public class WebidHelper {
     }
 
     /**
-     * This is override of LoginStatusBean.getCurrentUser().
+     * Get the current user, or null
      *
-     * @param session
-     * @param userEmail
+     * @param request
+     * @param s
      * @return
      */
     public static UserAccount getUserAccountByUri(HttpServletRequest request, String s) {

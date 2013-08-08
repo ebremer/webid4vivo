@@ -55,7 +55,7 @@ import org.bouncycastle.util.encoders.Base64;
 import sun.security.provider.SecureRandom;
 
 /**
- * Handles WebID generation.
+ * Generate a new WebID and add the certificate to the user's browser.
  *
  * @author Erich Bremer
  * @author Tammy DiPrima
@@ -65,14 +65,12 @@ public class WebidGenerator extends HttpServlet {
     static KeyPair keypair = null;
 
     /**
-     * Processes requests for both HTTP
-     * <code>GET</code> and
-     * <code>POST</code> methods.
+     * Display a WebID-generation form.
      *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
+     * @param request
+     * @param response
+     * @throws ServletException
+     * @throws IOException
      */
     protected void printForm(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -87,12 +85,12 @@ public class WebidGenerator extends HttpServlet {
                 out.println("<!DOCTYPE html>");
                 out.println("<html>");
                 out.println("<head>");
-                out.println("<title>Generate your WebID!</title>");
+                out.println("<title>Generate your WebID</title>");
                 out.println("<style type=\"text/css\">");
                 out.println("body { font-family: \"Lucida Sans Unicode\",\"Lucida Grande\", Geneva, helvetica, sans-serif; }");
                 out.println("h3 { color: #064d68; } </style></head>");
                 out.println("<body>");
-                out.println("<h3>Generate your WebID!</h3>");
+                out.println("<h3>Generate your WebID</h3>");
                 out.println("Your WebID will be your VIVO data URI...");
                 out.println("<form method=\"post\">");
                 out.println("<keygen id=\"pubkey\" name=\"pubkey\" challenge=\"randomchars\" keytype=\"rsa\" hidden>");
@@ -145,6 +143,7 @@ public class WebidGenerator extends HttpServlet {
     }
 
     /**
+     * Process the submitted WebID-generation form.
      *
      * @param request
      * @param response
@@ -207,28 +206,32 @@ public class WebidGenerator extends HttpServlet {
         SubjectPublicKeyInfo keyInfo = SubjectPublicKeyInfo.getInstance(pk.getEncoded());
         X509v3CertificateBuilder b = new X509v3CertificateBuilder(issuer, serial, notBefore, notAfter, subject, keyInfo);
 
-        // Add needed extensions.  Document why they are being added.
+        // Add needed extensions
         b.addExtension(X509Extension.basicConstraints, true, new BasicConstraints(false));
         b.addExtension(X509Extension.keyUsage, true, new KeyUsage(KeyUsage.digitalSignature | KeyUsage.nonRepudiation | KeyUsage.keyEncipherment | KeyUsage.keyAgreement | KeyUsage.keyCertSign));
         b.addExtension(MiscObjectIdentifiers.netscapeCertType, false, new NetscapeCertType(NetscapeCertType.sslClient | NetscapeCertType.smime));
+
         SubjectKeyIdentifier subjectKeyIdentifier = null;
         try {
             subjectKeyIdentifier = new JcaX509ExtensionUtils().createSubjectKeyIdentifier(pk);
         } catch (NoSuchAlgorithmException ex) {
             Logger.getLogger(WebidGenerator.class.getName()).log(Level.SEVERE, null, ex);
         }
+
         b.addExtension(X509Extension.subjectKeyIdentifier, false, subjectKeyIdentifier);
         GeneralNames subjectAltNames = new GeneralNames(new GeneralName(GeneralName.uniformResourceIdentifier, webid));
         b.addExtension(X509Extension.subjectAlternativeName, true, subjectAltNames);
         AlgorithmIdentifier sigAlgId = new DefaultSignatureAlgorithmIdentifierFinder().find("SHA1withRSA");
         AlgorithmIdentifier digAlgId = new DefaultDigestAlgorithmIdentifierFinder().find(sigAlgId);
         AsymmetricKeyParameter foo = PrivateKeyFactory.createKey(keypair.getPrivate().getEncoded());
+
         ContentSigner sigGen = null;
         try {
             sigGen = new BcRSAContentSignerBuilder(sigAlgId, digAlgId).build(foo);
         } catch (OperatorCreationException ex) {
             Logger.getLogger(WebidGenerator.class.getName()).log(Level.SEVERE, null, ex);
         }
+
         // Sign certificate by server
         X509CertificateHolder holder = b.build(sigGen);
         Certificate eeX509CertificateStructure = holder.toASN1Structure();
@@ -240,6 +243,7 @@ public class WebidGenerator extends HttpServlet {
         } catch (NoSuchProviderException ex) {
             Logger.getLogger(WebidGenerator.class.getName()).log(Level.SEVERE, null, ex);
         }
+
         InputStream is1 = new ByteArrayInputStream(eeX509CertificateStructure.getEncoded());
         X509Certificate theCert = null;
         try {
@@ -252,10 +256,10 @@ public class WebidGenerator extends HttpServlet {
         response.setContentType("application/x-x509-user-cert");
         ServletOutputStream out = response.getOutputStream();
 
-        // OK WE'RE DONE CREATING THE CERT! UPDATE VIVO.
+        // We're done creating the certificate.  Update VIVO.
         x.updateVivoWithGeneratedWebid(request, theCert);
 
-        // Finally, send WebID certificate to client
+        // Finally, send WebID certificate to client.
         try {
             StringWriter sw = new StringWriter();
             PEMWriter pemWriter = new PEMWriter(sw);
@@ -268,9 +272,14 @@ public class WebidGenerator extends HttpServlet {
             out.close();
         }
 
-
     }
 
+    /**
+     * Initialize values.
+     *
+     * @param config
+     * @throws ServletException
+     */
     @Override
     public void init(ServletConfig config) throws ServletException {
         if (keypair == null) {
@@ -289,9 +298,8 @@ public class WebidGenerator extends HttpServlet {
         }
     }
 
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**
-     * Handles the HTTP
+     * Performs the HTTP GET operation.
      * <code>GET</code> method.
      *
      * @param request servlet request
@@ -306,7 +314,7 @@ public class WebidGenerator extends HttpServlet {
     }
 
     /**
-     * Handles the HTTP
+     * Performs the HTTP POST operation.
      * <code>POST</code> method.
      *
      * @param request servlet request
@@ -318,14 +326,4 @@ public class WebidGenerator extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         processForm(request, response);
     }
-
-    /**
-     * Returns a short description of the servlet.
-     *
-     * @return a String containing servlet description
-     */
-    @Override
-    public String getServletInfo() {
-        return "Short description";
-    }// </editor-fold>
 }

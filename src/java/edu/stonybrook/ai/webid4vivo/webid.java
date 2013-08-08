@@ -2,7 +2,7 @@ package edu.stonybrook.ai.webid4vivo;
 
 /**
  * WebID bean.
- * 
+ *
  * @author Erich Bremer
  * @author Tammy DiPrima
  */
@@ -37,8 +37,12 @@ public class webid {
     private String exponent = null;
     private Model model = null;
     private static final Log log = LogFactory.getLog(webid.class);
-    
 
+    /**
+     * Build this WebID with the certificate received from the browser.
+     *
+     * @param cert
+     */
     webid(X509Certificate cert) {
         this.cert = cert;
         RSAPublicKey certpublickey = (RSAPublicKey) cert.getPublicKey();
@@ -67,6 +71,12 @@ public class webid {
         }
     }
 
+    /**
+     * Verify that this is a valid WebID.
+     *
+     * @param request
+     * @return
+     */
     public boolean verified(HttpServletRequest request) {
 
         boolean result = false;
@@ -89,15 +99,14 @@ public class webid {
             sb.append("cert:exponent ");
             sb.append(exponent);
             sb.append("; ] ] . }");
-            
+
             HttpSession session = ((HttpServletRequest) request).getSession(false);
             ServletContext ctx = session.getServletContext();
             OntModelSelector ontModelSelector = ModelContext.getOntModelSelector(ctx);
             OntModel userAccts = ontModelSelector.getUserAccountsModel();
-            
-            // Enter a critical section. The application must call leaveCriticialSection.
+
             userAccts.enterCriticalSection(Lock.READ);
-            
+
             try {
                 com.hp.hpl.jena.query.Query query = QueryFactory.create(sb.toString());
 
@@ -135,14 +144,29 @@ public class webid {
         return result;
     }
 
+    /**
+     * Get certificate
+     *
+     * @return
+     */
     public X509Certificate getCert() {
         return cert;
     }
 
+    /**
+     * Get the person's FOAF file, in RDF/XML FORMAT.
+     *
+     * @return
+     */
     public Model getFOAF() {
         return model;
     }
 
+    /**
+     * Get WebID URI.
+     *
+     * @return
+     */
     public String getURI() {
         return uri;
     }

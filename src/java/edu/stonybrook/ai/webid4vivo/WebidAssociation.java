@@ -1,7 +1,8 @@
 package edu.stonybrook.ai.webid4vivo;
 
 /**
- * WebidAssociation bean.
+ * WebidAssociation bean. Contains the components of the object that we are
+ * writing to (and reading from) the database.
  *
  * @author Erich Bremer
  * @author Tammy DiPrima

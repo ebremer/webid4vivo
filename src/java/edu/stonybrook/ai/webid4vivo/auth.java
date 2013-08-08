@@ -11,21 +11,21 @@ import javax.servlet.http.HttpServletResponse;
 
 /**
  * Authenticate the user.
- * 
- * @author Erich Bremer 
+ *
+ * @author Erich Bremer
  * @author Tammy DiPrima
  */
-public class auth extends HttpServlet 
-{
+public class auth extends HttpServlet {
+
     private static final int NO_CERT = 1;
     private static final int INVALID = 2;
     private static final int ACCOUNT = 3;
     private static final int LOGIN_FAIL = 4;
     private static final int NOT_ASSOCIATED = 5;
     private static final int WHAT = 6;
-    
+
     /**
-     * Person clicked login with WebID.
+     * Person clicked Login with WebID.
      *
      * @param request
      * @param response
@@ -62,7 +62,7 @@ public class auth extends HttpServlet
                     message = NOT_ASSOCIATED;
                 } else {
                     try {
-                        // LOG IN USER.
+                        // LOG IN USER
                         x.recordLogin(request, userAccount);
 
                     } catch (Exception ex) {
@@ -73,7 +73,7 @@ public class auth extends HttpServlet
 
 
             } else {
-                // Not a valid cert. I don't know you!
+                // NOT A VALID CERT
                 message = INVALID;
             }
 
@@ -85,21 +85,21 @@ public class auth extends HttpServlet
             // Successful login.
             String serverName = request.getServerName();
             int serverPort = request.getServerPort();
-            
-            if (serverPort == 443)
+
+            if (serverPort == 443) {
                 response.sendRedirect("https://" + serverName);
-            else
+            } else {
                 response.sendRedirect("http://" + serverName);
+            }
         }
 
     }
-    
-    
+
     /**
      * Something failed.
      *
      * @param response
-     * @param idk
+     * @param msg
      * @throws IOException
      */
     protected void fail(HttpServletResponse response, int msg) throws IOException {
@@ -111,9 +111,9 @@ public class auth extends HttpServlet
             out.println("<html>");
             out.println("<head>");
             out.println("<title>WebID Log In</title>");
-            out.println("<style type=\"text/css\">\n");
-            out.println("body { font-family: \"Lucida Sans Unicode\",\"Lucida Grande\", Geneva, helvetica, sans-serif; }\n");
-            out.println("h3 { color: #064d68; } </style></head>\n");
+            out.println("<style type=\"text/css\">");
+            out.println("body { font-family: \"Lucida Sans Unicode\",\"Lucida Grande\", Geneva, helvetica, sans-serif; }");
+            out.println("h3 { color: #064d68; } </style></head>");
             out.println("<body>");
 
             out.println("<p>");
@@ -136,7 +136,7 @@ public class auth extends HttpServlet
                     out.println("Please <a href=\"/\">click here</a>, sign in, and associate it.  Thanks!");
                     break;
                 case WHAT:
-                    // Basically, I don't know what you want.  You passed me a bad parameter.
+                    // I don't know what you want. You may have passed a bad parameter.
                     out.println("Page not found.<br>");
                     out.println("Please <b><a href=\"/\">click here</a></b>.");
                     break;
@@ -148,12 +148,10 @@ public class auth extends HttpServlet
         } finally {
             out.close();
         }
-    }    
-    
+    }
 
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**
-     * Handles the HTTP
+     * Performs the HTTP GET operation.
      * <code>GET</code> method.
      *
      * @param request servlet request
@@ -168,7 +166,7 @@ public class auth extends HttpServlet
     }
 
     /**
-     * Handles the HTTP
+     * Performs the HTTP POST operation.
      * <code>POST</code> method.
      *
      * @param request servlet request
@@ -181,14 +179,4 @@ public class auth extends HttpServlet
             throws ServletException, IOException {
         attemptLogin(request, response);
     }
-
-    /**
-     * Returns a short description of the servlet.
-     *
-     * @return a String containing servlet description
-     */
-    @Override
-    public String getServletInfo() {
-        return "Short description";
-    }// </editor-fold>
 }
