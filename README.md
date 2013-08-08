@@ -17,6 +17,8 @@ Tammy DiPrima
 * bcpkix-jdk15on-149.jar 
 * bcprov-jdk15on-149.jar
 
+**Put the jars here:** [vivo-install-dir]/src
+
 **For your local development environment, you'll also need:**
 
 * The [Apache Commons Logging](http://commons.apache.org/proper/commons-logging/download_logging.cgi) jar
@@ -27,7 +29,6 @@ Tammy DiPrima
 * The VIVO class files:
   * Package them into a jar. Specifically, the class files that you would find under: WEB-INF/classes/edu
 
-**Put the jars here:** [vivo-install-dir]/src
 
 #### Source Code
 
