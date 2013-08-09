@@ -33,6 +33,10 @@ Tammy DiPrima
 * Finally, of course, you'll need the Java and Java Servlet APIs
 
 
+#### Required Ontology
+Import the [Cert Ontology](http://www.w3.org/ns/auth/cert) into VIVO
+
+
 #### Source Code
 
 **Create directory, and move java files to:** [vivo-install-dir]/src/edu/stonybrook/hsai/webid4vivo
@@ -64,8 +68,21 @@ Tammy DiPrima
         <url-pattern>/webidGen</url-pattern>
     </servlet-mapping>
 
+#### Add the certificate info to the RDF serialization
+In order for anyone to be able to use a freshly-generated WebID, on a site that accpets WebID as a means of authentication, you'll need to modify some VIVO code:
 
-#### Add button and link to user interfacea
+[vivo-install-dir]/vitro-core/webapp/src/edu/cornell/mannlib/vitro/webapp/controller/individual/**IndividualRdfAssembler.java**
+There is a method called **includeInLinkedData()**
+In the while loop, after the Statement declaration, add the following lines:
+
+    if (stmt.getObject().asResource().getURI()
+            .startsWith("http://www.w3.org/ns/auth/cert")) {
+       retval = true;
+       break;
+    }
+
+
+#### Add button and link to user interface
 
 **Add the following to:** [vivo-install-dir]/vitro-core/webapp/web/templates/freemarker/widgets/widget-login.ftl
 
