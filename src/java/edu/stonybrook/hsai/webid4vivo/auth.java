@@ -1,4 +1,4 @@
-package edu.stonybrook.ai.webid4vivo;
+package edu.stonybrook.hsai.webid4vivo;
 
 import edu.cornell.mannlib.vitro.webapp.beans.UserAccount;
 import java.io.IOException;

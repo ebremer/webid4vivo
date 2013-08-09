@@ -1,4 +1,4 @@
-package edu.stonybrook.ai.webid4vivo;
+package edu.stonybrook.hsai.webid4vivo;
 
 import java.io.IOException;
 import java.io.PrintWriter;
