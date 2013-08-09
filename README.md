@@ -35,21 +35,21 @@ Tammy DiPrima
 
 #### Source Code
 
-**Create directory, and move java files to:** [vivo-install-dir]/src/edu/stonybrook/ai/webid4vivo
+**Create directory, and move java files to:** [vivo-install-dir]/src/edu/stonybrook/hsai/webid4vivo
 
 **Add the servlets & servlet mappings to:** [vivo-install-dir]productMods/WEB-INF/web.xml<br>
 
     <servlet>
         <servlet-name>signIn</servlet-name>
-        <servlet-class>edu.stonybrook.ai.webid4vivo.auth</servlet-class>
+        <servlet-class>edu.stonybrook.hsai.webid4vivo.auth</servlet-class>
     </servlet>
     <servlet>
         <servlet-name>webidMgt</servlet-name>
-        <servlet-class>edu.stonybrook.ai.webid4vivo.WebidController</servlet-class>
+        <servlet-class>edu.stonybrook.hsai.webid4vivo.WebidController</servlet-class>
     </servlet>
     <servlet>
         <servlet-name>webidGen</servlet-name>
-        <servlet-class>edu.stonybrook.ai.webid4vivo.WebidGenerator</servlet-class>
+        <servlet-class>edu.stonybrook.hsai.webid4vivo.WebidGenerator</servlet-class>
     </servlet>
     <servlet-mapping>
         <servlet-name>signIn</servlet-name>
@@ -65,7 +65,7 @@ Tammy DiPrima
     </servlet-mapping>
 
 
-#### Freemarker
+#### Add button and link to user interfacea
 
 **Add the following to:** [vivo-install-dir]/vitro-core/webapp/web/templates/freemarker/widgets/widget-login.ftl
 
@@ -98,16 +98,20 @@ Redeploy VIVO<br>**
 
 **Add commands to /etc/httpd/conf/httpd.conf:**
 
-    #Listen 12.34.56.78:80
+    #Enable SSL
     Listen 443
     
     #LoadModule foo_module modules/mod_foo.so
     LoadModule ssl_module modules/mod_ssl.so
-    
+
+    # If you are doing virtual hosting, put the Location directive within the VirtualHost directive
+    # Otherwise, just put it somewhere in the server config
     #<VirtualHost *:80>    
     <Location /signIn>
         SSLVerifyDepth 0
         SSLVerifyClient optional_no_ca
     </Location>
+
+    
 
 **Restart apache**
