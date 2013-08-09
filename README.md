@@ -96,13 +96,9 @@ Redeploy VIVO<br>**
 
 #### Apache HTTP Server
 
-**Add commands to /etc/httpd/conf/httpd.conf:**
+Generate the Certification Request
 
-    #Enable SSL
-    Listen 443
-    
-    #LoadModule foo_module modules/mod_foo.so
-    LoadModule ssl_module modules/mod_ssl.so
+Modify /etc/httpd/conf/httpd.conf File to Enable SSL
 
     # If you are doing virtual hosting, put the Location directive within the VirtualHost directive
     # Otherwise, just put it somewhere in the server config
