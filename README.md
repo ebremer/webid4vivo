@@ -12,7 +12,7 @@ Tammy DiPrima
 
 #### Required Jars
 
-**Get [Bouncy Castle](http://www.bouncycastle.org/latest_releases.html) Crypto APIs, latest releases:** 
+**Get [Bouncy Castle](http://www.bouncycastle.org/latest_releases.html) Crypto APIs:** 
 
 * bcpkix-jdk15on-149.jar 
 * bcprov-jdk15on-149.jar
@@ -26,15 +26,12 @@ Tammy DiPrima
 * The [Apache Jena](http://www.apache.org/dist/jena/binaries/) jars:
   * jena-core
   * jena-arq  
+    * Note: Download the apache-jena* file.  When you uncompress it, you will find both "core" and "arq" files in the "lib" folder.
 * The VIVO class files:
   * If you haven't already, download [VIVO](http://vivoweb.org/download)
   * Once you deploy the application, you'll find class files here: WEB-INF/classes/edu.
   * Package them into a jar.
 * Finally, of course, you'll need the Java and Java Servlet APIs
-
-
-#### Required Ontology
-Import the [Cert Ontology](http://www.w3.org/ns/auth/cert) into VIVO
 
 
 #### Source Code
@@ -68,19 +65,6 @@ Import the [Cert Ontology](http://www.w3.org/ns/auth/cert) into VIVO
         <url-pattern>/webidGen</url-pattern>
     </servlet-mapping>
 
-#### Add the certificate info to the RDF serialization
-In order for anyone to be able to use a freshly-generated WebID, on a site that accpets WebID as a means of authentication, you'll need to modify some VIVO code:
-
-[vivo-install-dir]/vitro-core/webapp/src/edu/cornell/mannlib/vitro/webapp/controller/individual/**IndividualRdfAssembler.java**
-There is a method called **includeInLinkedData()**
-In the while loop, after the Statement declaration, add the following lines:
-
-    if (stmt.getObject().asResource().getURI()
-            .startsWith("http://www.w3.org/ns/auth/cert")) {
-       retval = true;
-       break;
-    }
-
 
 #### Add button and link to user interface
 
@@ -113,18 +97,18 @@ Redeploy VIVO<br>**
 
 #### Apache HTTP Server
 
-Generate the Certification Request
+**Add commands to /etc/httpd/conf/httpd.conf:**
 
-Modify /etc/httpd/conf/httpd.conf File to Enable SSL
-
-    # If you are doing virtual hosting, put the Location directive within the VirtualHost directive
-    # Otherwise, just put it somewhere in the server config
+    #Listen 12.34.56.78:80
+    Listen 443
+    
+    #LoadModule foo_module modules/mod_foo.so
+    LoadModule ssl_module modules/mod_ssl.so
+    
     #<VirtualHost *:80>    
     <Location /signIn>
         SSLVerifyDepth 0
         SSLVerifyClient optional_no_ca
     </Location>
-
-    
 
 **Restart apache**
