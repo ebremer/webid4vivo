@@ -3,7 +3,7 @@
 Purpose: To add webid authentication and provisioning capabilities to VIVO (http://www.vivoweb.org)
 
 **Developers:**<br>
-Erich Bremer<br>
+Erich Bremer http://www.ebremer.com<br>
 Tammy DiPrima
 
 =================
