@@ -1,6 +1,6 @@
 ## WebID4VIVO
 
-Purpose: To add webid authentication and provisioning capabilities to VIVO (http://www.vivoweb.org)
+Purpose: To add WebID authentication and provisioning capabilities to VIVO (http://www.vivoweb.org)
 
 **Developers:**<br>
 Erich Bremer http://www.ebremer.com<br>
