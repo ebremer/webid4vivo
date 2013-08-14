@@ -111,4 +111,4 @@ Redeploy VIVO<br>**
         SSLVerifyClient optional_no_ca
     </Location>
 
-**Restart apache**
+**Restart Apache**
